@@ -18,3 +18,8 @@ build/
 
 # Supabase local temp
 supabase/.temp/
+
+# Supabase CLI (binários grandes)
+tools/supabase-cli/supabase.exe
+tools/supabase-cli/*.tar.gz
+tools/supabase-cli/*.zip
