@@ -1,0 +1,20 @@
+.next/
+*.log
+node_modules/
+.env
+.env.local
+.env.*.local
+dist/
+build/
+.vercel
+.DS_Store
+*.pem
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.env.*.local
+
+# Supabase local temp
+supabase/.temp/

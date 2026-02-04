@@ -1,0 +1,3 @@
+-- Migration (documental): bucket usado para imagens
+-- Observação: criação de bucket do Storage não roda via migrations SQL padrão.
+-- O app cria automaticamente o bucket `moovepay-media` no primeiro upload via service role.
