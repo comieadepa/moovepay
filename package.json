@@ -28,7 +28,7 @@
     "next-auth": "^4.24.5",
     "pg": "^8.18.0",
     "qrcode": "^1.5.3",
-    "qrcode.react": "^1.0.1",
+    "qrcode.react": "^4.2.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-hook-form": "^7.48.0",
