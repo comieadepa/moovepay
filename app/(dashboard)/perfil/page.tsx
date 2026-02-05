@@ -44,6 +44,7 @@ export default function PerfilPage() {
   const [saving, setSaving] = useState(false)
   const [uploadingAvatar, setUploadingAvatar] = useState(false)
   const [pickedAvatarName, setPickedAvatarName] = useState<string>('')
+  const [avatarUrlInput, setAvatarUrlInput] = useState<string>('')
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
   const [email, setEmail] = useState<string>('')
@@ -86,6 +87,7 @@ export default function PerfilPage() {
     setError(null)
     setSuccess(null)
     setPickedAvatarName(file.name)
+    setAvatarUrlInput('')
 
     try {
       const previousUrl = form.getValues('avatarUrl')
@@ -104,6 +106,7 @@ export default function PerfilPage() {
     setError(null)
     setSuccess(null)
     setPickedAvatarName(file.name)
+    setAvatarUrlInput('')
     setAvatarEditorFile(file)
     setAvatarZoom(1)
     setAvatarRotate(0)
@@ -216,6 +219,8 @@ export default function PerfilPage() {
             uf: u?.address?.uf || '',
           },
         })
+
+        setAvatarUrlInput('')
       } catch {
         if (!active) return
         setError('Erro ao conectar com o servidor')
@@ -398,12 +403,26 @@ export default function PerfilPage() {
                                 Envie uma foto do seu dispositivo (você pode ajustar antes de enviar). Se preferir, cole uma URL pública abaixo.
                               </p>
 
-                              <Input
-                                placeholder="(opcional) URL da foto"
-                                {...field}
-                                value={field.value || ''}
-                                disabled={uploadingAvatar}
-                              />
+                              <div className="flex items-center gap-2">
+                                <Input
+                                  placeholder="(opcional) URL da foto"
+                                  value={avatarUrlInput}
+                                  onChange={(e) => setAvatarUrlInput(e.target.value)}
+                                  disabled={uploadingAvatar}
+                                />
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  disabled={uploadingAvatar || !avatarUrlInput.trim()}
+                                  onClick={() => {
+                                    const next = avatarUrlInput.trim()
+                                    field.onChange(next)
+                                    setPickedAvatarName('URL informada')
+                                  }}
+                                >
+                                  Usar URL
+                                </Button>
+                              </div>
                               <p className="text-xs text-slate-500">
                                 A imagem é otimizada automaticamente.
                               </p>
