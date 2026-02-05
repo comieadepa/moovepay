@@ -1,0 +1,64 @@
+# ============================================================================
+# AMBIENTE VARIABLES PARA VERCEL (Production)
+# ============================================================================
+# Copie e preencha os valores reais no Vercel Dashboard:
+# Vercel → Project Settings → Environment Variables
+# ============================================================================
+
+# ==================== OBRIGATÓRIAS ====================
+
+# Supabase - URL do projeto
+NEXT_PUBLIC_SUPABASE_URL=https://SEU_PROJECT_REF.supabase.co
+
+# Supabase - Chave Service Role (server-only, segura)
+SUPABASE_SERVICE_ROLE_KEY=sb_secret_XXXXX...
+
+# Autenticação - JWT Secret (gere um valor aleatório forte, 32+ chars)
+JWT_SECRET=XXXXX_COLOQUE_UM_VALOR_ALEATORIO_FORTE_AQUI_XXXXX
+
+# Admin - Código extra de acesso (mín. 16 chars, valor forte)
+ADMIN_ACCESS_CODE=XXXXX_CODIGO_FORTE_AQUI_XXXXX
+
+# ==================== GOOGLE OAUTH ====================
+
+GOOGLE_CLIENT_ID=XXXXX_DO_GOOGLE_CLOUD_CONSOLE.apps.googleusercontent.com
+GOOGLE_CLIENT_SECRET=XXXXX_SECRET_DO_GOOGLE_XXXXX
+
+# ==================== RESEND (E-MAILS) ====================
+
+RESEND_API_KEY=re_XXXXX_CHAVE_RESEND_XXXXX
+NEXT_PUBLIC_EMAIL_FROM=noreply@moovepay.com.br
+
+# ==================== ASAAS (PAGAMENTOS) ====================
+
+NEXT_PUBLIC_ASAAS_API_URL=https://api.asaas.com/v3
+ASAAS_API_KEY=sk_live_XXXXX_OU_sk_test_XXXXX_DO_ASAAS
+
+# ==================== RECOMENDADO ====================
+
+NEXT_PUBLIC_SUPABASE_ANON_KEY=sb_publishable_XXXXX_DO_SUPABASE_XXXXX
+
+# ============================================================================
+# INSTRUÇÕES:
+# 1. No Vercel Dashboard, vá em: Settings → Environment Variables
+# 2. Cole cada Key (coluna esquerda) e seu Value (coluna direita)
+# 3. Preencha apenas os valores XXXXX com seus dados reais
+# 4. Não use aspas nos values
+# 5. Production, Preview e Development podem ter valores diferentes
+#    (ex.: Dev pode usar Asaas sandbox, Prod usa live)
+# 6. Clique "Save" após adicionar/editar
+# 7. Redeploy o projeto para aplicar as mudanças
+# ============================================================================
+
+# CHECKLIST DE PREENCHIMENTO:
+# [ ] NEXT_PUBLIC_SUPABASE_URL
+# [ ] SUPABASE_SERVICE_ROLE_KEY
+# [ ] JWT_SECRET
+# [ ] ADMIN_ACCESS_CODE
+# [ ] GOOGLE_CLIENT_ID
+# [ ] GOOGLE_CLIENT_SECRET
+# [ ] RESEND_API_KEY
+# [ ] NEXT_PUBLIC_EMAIL_FROM
+# [ ] NEXT_PUBLIC_ASAAS_API_URL
+# [ ] ASAAS_API_KEY
+# [ ] NEXT_PUBLIC_SUPABASE_ANON_KEY
