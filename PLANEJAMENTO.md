@@ -1,6 +1,6 @@
 # MoovePay — Planejamento (Roadmap + Status)
 
-Atualizado em: **04/02/2026**
+Atualizado em: **05/02/2026**
 
 Este documento descreve o escopo do produto e, principalmente, **o que já foi entregue** e **o próximo bloco de entregas** (prioridades). Ele deve ser lido junto de `ESTRUTURA.md`.
 
@@ -49,6 +49,12 @@ Plataforma para criadores de eventos publicarem inscrições e gerenciarem parti
 
 ### E-mail
 - ✅ Integração Resend (`lib/email.ts`) e envio de confirmação de inscrição (best-effort)
+
+### UX / build / deploy
+- ✅ Fluxo Google OAuth mais robusto em produção (origem canônica via `APP_ORIGIN` + redirects padronizados)
+- ✅ Correção de build do Next.js (wrappers com `Suspense` em rotas que usam `useSearchParams`)
+- ✅ Simplificação do editor de imagem (remoção completa de “Remover fundo”)
+- ✅ Campo de URL do avatar não exibe a URL salva (aplica somente via ação explícita do usuário)
 
 ---
 

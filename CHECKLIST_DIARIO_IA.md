@@ -1,6 +1,6 @@
 # 📋 MoovePay — Checklist Diário do Agente de IA
 
-Atualizado em: **04/02/2026**
+Atualizado em: **05/02/2026**
 
 Objetivo: manter um “briefing operacional” do projeto para qualquer agente (ou dev) entrar no repositório e entender rapidamente **o que existe**, **como está amarrado** e **o que fazer a seguir**.
 
@@ -63,6 +63,9 @@ NEXT_PUBLIC_SUPABASE_URL="https://<project-ref>.supabase.co"
 SUPABASE_SERVICE_ROLE_KEY="<service-role-key>"
 JWT_SECRET="<string-longa-e-segura>"
 NEXT_PUBLIC_APP_URL="http://localhost:3000"
+
+# Produção (recomendado para OAuth/redirects consistentes)
+APP_ORIGIN="https://seu-dominio.com"
 ```
 
 ### Email (Resend)
@@ -80,6 +83,8 @@ GOOGLE_CLIENT_SECRET="<...>"
 Redirect URIs (Google Cloud Console):
 - `http://localhost:3000/api/auth/google/callback`
 - `https://SEU-DOMINIO/api/auth/google/callback`
+
+Em produção, configure `APP_ORIGIN` no Vercel com o domínio canônico (ex.: `https://moovepay.com.br`).
 
 ### Admin (staff)
 ```env
@@ -170,6 +175,7 @@ npm run bootstrap:admin -- --email voce@dominio.com --password "SENHA_FORTE" --n
 | Schema não executado no Supabase | ⏳ Pendente | Rodar `supabase-schema.sql` no SQL Editor |
 | Env vars do Supabase faltando | ⏳ Pendente | Configurar `NEXT_PUBLIC_SUPABASE_URL` e `SUPABASE_SERVICE_ROLE_KEY` |
 | npm install falhou antes | ✅ Resolvido | Dependências já instaladas |
+| Google OAuth falha em produção (redirect/origem) | ⏳ Atenção | Conferir `APP_ORIGIN` no Vercel e Redirect URI no Google Cloud (`/api/auth/google/callback`) |
 
 ---
 
@@ -178,8 +184,8 @@ npm run bootstrap:admin -- --email voce@dominio.com --password "SENHA_FORTE" --n
 1. **Verificar status:** `npm list --depth=0`
 2. **Criar schema no Supabase:** executar `supabase-schema.sql` no SQL Editor
 3. **Iniciar dev:** `npm run dev`
-4. **Primeiro componente a criar:** Login/Signup
-5. **Lembrar:** Stack é Next.js + TailwindCSS + shadcn/ui
+4. **Validar smoke tests:** Google OAuth, criar/publicar evento, upload/edição de avatar e banner
+5. **Próximo foco:** Pagamentos ASAAS + webhooks
 
 ---
 
@@ -211,18 +217,17 @@ npm run bootstrap:admin -- --email voce@dominio.com --password "SENHA_FORTE" --n
 
 ## ✨ Última Atualização
 
-- **Data:** 2 de fevereiro de 2026
-- **Status:** ✅ Projeto compilando com sucesso
-- **Build:** `npm run build` - OK
-- **Dev Server:** `npm run dev` - Rodando em http://localhost:3000
-- **Banco de Dados:** Supabase PostgreSQL configurado e sincronizado
-- **Próximo:** Implementar página pública de evento e integração ASAAS
+- **Data:** 5 de fevereiro de 2026
+- **Status:** ✅ Build verde e deploy acionado por push
+- **Auth Google:** origem canônica via `APP_ORIGIN` + redirects de erro para `/login?error=...` + cookies mais compatíveis (SameSite Lax)
+- **Next.js build:** `useSearchParams` isolado em componentes client com wrappers `Suspense` (login/signup)
+- **Mídia:** removida a feature de “Remover fundo” do editor (UI e core) e o input de URL do avatar não exibe URL salva (só aplica ao clicar “Usar URL”)
 
 ---
 
 ## 📝 Notas Importantes
 
-1. **Desenvolvimento local:** Use PostgreSQL localhost (não Supabase agora)
+1. **Desenvolvimento local:** Usar Supabase PostgreSQL (ou Postgres compatível) via `.env.local`
 2. **Usuário preferiu:** Implementação ágil, começar logo
 3. **Padrão de código:** TypeScript rigoroso + Zod validation
 4. **Componentes:** Usar shadcn/ui para consistência

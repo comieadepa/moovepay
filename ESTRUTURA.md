@@ -1,6 +1,6 @@
 # MoovePay — Estrutura do Projeto
 
-Atualizado em: **04/02/2026**
+Atualizado em: **05/02/2026**
 
 Este documento descreve a **estrutura real** do repositório (não um “sonho ideal”), com um mapa rápido de **rotas**, **módulos**, **autenticação/RBAC**, e onde mexer para cada tipo de mudança.
 
@@ -127,6 +127,9 @@ SUPABASE_SERVICE_ROLE_KEY="<service-role-key>"
 # Next
 NEXT_PUBLIC_APP_URL="http://localhost:3000"
 
+# Produção (recomendado para Google OAuth / redirects)
+APP_ORIGIN="https://seu-dominio.com"
+
 # JWT
 JWT_SECRET="<string-longa-e-segura>"
 
@@ -166,7 +169,8 @@ npm run bootstrap:admin -- --email voce@dominio.com --password "SENHA_FORTE" --n
 
 - Landing / seção “Eventos em aberto”: `app/page.tsx`, `app/components/OpenEventsSection.tsx`, `app/api/eventos/route.ts`
 - Autenticação/JWT: `lib/auth.ts`, `middleware.ts`, `app/api/auth/*`
-- Google OAuth: `app/api/auth/google/*`, `app/(auth)/completar-cadastro/page.tsx`
+- Google OAuth: `app/api/auth/google/*`, `app/(auth)/completar-cadastro/page.tsx`, `app/(auth)/login/login-client.tsx`, `app/(auth)/signup/signup-client.tsx`
 - CRUD de eventos: `app/api/events/*`, `app/(dashboard)/eventos/*`
 - Carrinho/checkout: `store/cart.ts`, `app/checkout/page.tsx`, `app/confirmacao/page.tsx`
 - E-mails: `lib/email.ts`, integrações nas rotas (ex.: `app/api/registrations/route.ts`)
+- Upload/edição de mídia (avatar/banner): `lib/media-client.ts`, `lib/image-editor-client.ts`, `app/(dashboard)/perfil/page.tsx`, `app/(dashboard)/eventos/*`
