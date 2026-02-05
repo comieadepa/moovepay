@@ -41,8 +41,6 @@ export default function CreateEventPage() {
   const [bannerZoom, setBannerZoom] = useState(1)
   const [bannerRotate, setBannerRotate] = useState(0)
   const [bannerOffset, setBannerOffset] = useState({ x: 0, y: 0 })
-  const [bannerRemoveBg, setBannerRemoveBg] = useState(false)
-  const [bannerRemoveBgTolerance, setBannerRemoveBgTolerance] = useState(40)
   const [bannerIsDragging, setBannerIsDragging] = useState(false)
   const bannerDragRef = useRef<{ startX: number; startY: number; baseX: number; baseY: number } | null>(null)
 
@@ -68,8 +66,6 @@ export default function CreateEventPage() {
     setBannerZoom(1)
     setBannerRotate(0)
     setBannerOffset({ x: 0, y: 0 })
-    setBannerRemoveBg(false)
-    setBannerRemoveBgTolerance(40)
     setBannerEditorOpen(true)
 
     try {
@@ -105,16 +101,11 @@ export default function CreateEventPage() {
         rotateDeg: bannerRotate,
         offsetX: bannerOffset.x,
         offsetY: bannerOffset.y,
-        removeBackground: {
-          enabled: bannerRemoveBg,
-          tolerance: bannerRemoveBgTolerance,
-          feather: 25,
-        },
       })
     } catch {
       // ignore preview errors
     }
-  }, [bannerEditorOpen, bannerEditorImage, bannerZoom, bannerRotate, bannerOffset, bannerRemoveBg, bannerRemoveBgTolerance])
+  }, [bannerEditorOpen, bannerEditorImage, bannerZoom, bannerRotate, bannerOffset])
 
   const applyBannerEditsAndUpload = async () => {
     if (!bannerEditorFile || !bannerEditorImage) return
@@ -131,11 +122,6 @@ export default function CreateEventPage() {
         rotateDeg: bannerRotate,
         offsetX: bannerOffset.x,
         offsetY: bannerOffset.y,
-        removeBackground: {
-          enabled: bannerRemoveBg,
-          tolerance: bannerRemoveBgTolerance,
-          feather: 25,
-        },
       })
 
       // Para banner, WebP tende a ficar mais leve.
@@ -425,7 +411,7 @@ export default function CreateEventPage() {
                     <div className="px-5 py-4 border-b border-slate-200 flex items-center justify-between">
                       <div>
                         <div className="text-base font-semibold text-slate-900">Ajustar banner</div>
-                        <div className="text-xs text-slate-500">Zoom, giro e remoção de fundo (opcional).</div>
+                        <div className="text-xs text-slate-500">Zoom e giro.</div>
                       </div>
                       <Button type="button" variant="ghost" onClick={closeBannerEditor}>
                         Fechar
@@ -505,36 +491,6 @@ export default function CreateEventPage() {
                             />
                           </div>
 
-                          <div className="rounded-md border border-slate-200 p-3">
-                            <label className="flex items-center gap-2 text-sm font-medium text-slate-700">
-                              <input
-                                type="checkbox"
-                                checked={bannerRemoveBg}
-                                onChange={(e) => setBannerRemoveBg(e.target.checked)}
-                              />
-                              Remover fundo (experimental)
-                            </label>
-                            <p className="mt-1 text-xs text-slate-500">Funciona melhor com fundo de cor uniforme.</p>
-
-                            {bannerRemoveBg && (
-                              <div className="mt-3">
-                                <div className="flex items-center justify-between">
-                                  <label className="text-sm font-medium text-slate-700">Tolerância</label>
-                                  <span className="text-xs text-slate-500">{bannerRemoveBgTolerance}</span>
-                                </div>
-                                <input
-                                  type="range"
-                                  min={5}
-                                  max={120}
-                                  step={1}
-                                  value={bannerRemoveBgTolerance}
-                                  onChange={(e) => setBannerRemoveBgTolerance(Number(e.target.value))}
-                                  className="w-full"
-                                />
-                              </div>
-                            )}
-                          </div>
-
                           <div className="flex items-center gap-2">
                             <Button
                               type="button"
@@ -543,8 +499,6 @@ export default function CreateEventPage() {
                                 setBannerZoom(1)
                                 setBannerRotate(0)
                                 setBannerOffset({ x: 0, y: 0 })
-                                setBannerRemoveBg(false)
-                                setBannerRemoveBgTolerance(40)
                               }}
                             >
                               Resetar

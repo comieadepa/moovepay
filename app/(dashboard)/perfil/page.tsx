@@ -54,8 +54,6 @@ export default function PerfilPage() {
   const [avatarZoom, setAvatarZoom] = useState(1)
   const [avatarRotate, setAvatarRotate] = useState(0)
   const [avatarOffset, setAvatarOffset] = useState({ x: 0, y: 0 })
-  const [avatarRemoveBg, setAvatarRemoveBg] = useState(false)
-  const [avatarRemoveBgTolerance, setAvatarRemoveBgTolerance] = useState(40)
   const [avatarIsDragging, setAvatarIsDragging] = useState(false)
   const avatarDragRef = useRef<{ startX: number; startY: number; baseX: number; baseY: number } | null>(null)
 
@@ -110,8 +108,6 @@ export default function PerfilPage() {
     setAvatarZoom(1)
     setAvatarRotate(0)
     setAvatarOffset({ x: 0, y: 0 })
-    setAvatarRemoveBg(false)
-    setAvatarRemoveBgTolerance(40)
     setAvatarEditorOpen(true)
 
     try {
@@ -147,16 +143,11 @@ export default function PerfilPage() {
         rotateDeg: avatarRotate,
         offsetX: avatarOffset.x,
         offsetY: avatarOffset.y,
-        removeBackground: {
-          enabled: avatarRemoveBg,
-          tolerance: avatarRemoveBgTolerance,
-          feather: 25,
-        },
       })
     } catch {
       // ignore preview errors
     }
-  }, [avatarEditorOpen, avatarEditorImage, avatarZoom, avatarRotate, avatarOffset, avatarRemoveBg, avatarRemoveBgTolerance])
+  }, [avatarEditorOpen, avatarEditorImage, avatarZoom, avatarRotate, avatarOffset])
 
   const applyAvatarEditsAndUpload = async () => {
     if (!avatarEditorFile || !avatarEditorImage) return
@@ -173,11 +164,6 @@ export default function PerfilPage() {
         rotateDeg: avatarRotate,
         offsetX: avatarOffset.x,
         offsetY: avatarOffset.y,
-        removeBackground: {
-          enabled: avatarRemoveBg,
-          tolerance: avatarRemoveBgTolerance,
-          feather: 25,
-        },
       })
 
       const editedFile = await canvasToFile(exportCanvas, avatarEditorFile.name, 'image/png')
@@ -462,7 +448,7 @@ export default function PerfilPage() {
                       <div className="px-5 py-4 border-b border-slate-200 flex items-center justify-between">
                         <div>
                           <div className="text-base font-semibold text-slate-900">Ajustar foto</div>
-                          <div className="text-xs text-slate-500">Zoom, giro e remoção de fundo (melhor para fundo liso).</div>
+                          <div className="text-xs text-slate-500">Zoom e giro.</div>
                         </div>
                         <Button type="button" variant="ghost" onClick={closeAvatarEditor}>
                           Fechar
@@ -542,36 +528,6 @@ export default function PerfilPage() {
                               />
                             </div>
 
-                            <div className="rounded-md border border-slate-200 p-3">
-                              <label className="flex items-center gap-2 text-sm font-medium text-slate-700">
-                                <input
-                                  type="checkbox"
-                                  checked={avatarRemoveBg}
-                                  onChange={(e) => setAvatarRemoveBg(e.target.checked)}
-                                />
-                                Remover fundo (experimental)
-                              </label>
-                              <p className="mt-1 text-xs text-slate-500">Funciona melhor com fundo de cor uniforme.</p>
-
-                              {avatarRemoveBg && (
-                                <div className="mt-3">
-                                  <div className="flex items-center justify-between">
-                                    <label className="text-sm font-medium text-slate-700">Tolerância</label>
-                                    <span className="text-xs text-slate-500">{avatarRemoveBgTolerance}</span>
-                                  </div>
-                                  <input
-                                    type="range"
-                                    min={5}
-                                    max={120}
-                                    step={1}
-                                    value={avatarRemoveBgTolerance}
-                                    onChange={(e) => setAvatarRemoveBgTolerance(Number(e.target.value))}
-                                    className="w-full"
-                                  />
-                                </div>
-                              )}
-                            </div>
-
                             <div className="flex items-center gap-2">
                               <Button
                                 type="button"
@@ -580,8 +536,6 @@ export default function PerfilPage() {
                                   setAvatarZoom(1)
                                   setAvatarRotate(0)
                                   setAvatarOffset({ x: 0, y: 0 })
-                                  setAvatarRemoveBg(false)
-                                  setAvatarRemoveBgTolerance(40)
                                 }}
                               >
                                 Resetar
