@@ -4,6 +4,26 @@ import { generateToken, hashPassword } from '@/lib/auth'
 
 export const dynamic = 'force-dynamic'
 
+function normalizeOrigin(origin: string) {
+  return origin.replace(/\/+$/, '')
+}
+
+function getCanonicalOrigin(request: NextRequest) {
+  const explicit =
+    process.env.APP_ORIGIN ||
+    process.env.APP_URL ||
+    process.env.NEXT_PUBLIC_APP_ORIGIN ||
+    process.env.NEXT_PUBLIC_APP_URL
+
+  if (explicit) return normalizeOrigin(explicit)
+
+  if (process.env.VERCEL_URL) {
+    return normalizeOrigin(`https://${process.env.VERCEL_URL}`)
+  }
+
+  return normalizeOrigin(request.nextUrl.origin)
+}
+
 async function verifyIdToken(idToken: string, clientId: string) {
   const url = new URL('https://oauth2.googleapis.com/tokeninfo')
   url.searchParams.set('id_token', idToken)
@@ -37,7 +57,7 @@ export async function GET(request: NextRequest) {
   const stateCookie = request.cookies.get('oauth_state')?.value
 
   if (!code || !state || !stateCookie || state !== stateCookie) {
-    const res = NextResponse.redirect(new URL('/signup?error=google_state', request.url))
+    const res = NextResponse.redirect(new URL('/login?error=google_state', request.url))
     res.cookies.set('oauth_state', '', { path: '/', maxAge: 0 })
     return res
   }
@@ -46,12 +66,13 @@ export async function GET(request: NextRequest) {
   const clientSecret = process.env.GOOGLE_CLIENT_SECRET
 
   if (!clientId || !clientSecret) {
-    const res = NextResponse.redirect(new URL('/signup?error=google_not_configured', request.url))
+    const res = NextResponse.redirect(new URL('/login?error=google_not_configured', request.url))
     res.cookies.set('oauth_state', '', { path: '/', maxAge: 0 })
     return res
   }
 
-  const redirectUri = `${request.nextUrl.origin}/api/auth/google/callback`
+  const canonicalOrigin = getCanonicalOrigin(request)
+  const redirectUri = new URL('/api/auth/google/callback', canonicalOrigin).toString()
 
   try {
     // Trocar code por tokens
@@ -118,7 +139,7 @@ export async function GET(request: NextRequest) {
     res.cookies.set('token', token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
+      sameSite: 'lax',
       maxAge: 7 * 24 * 60 * 60,
       path: '/',
     })
@@ -126,7 +147,7 @@ export async function GET(request: NextRequest) {
     return res
   } catch (e) {
     console.error('Erro no callback Google:', e)
-    const res = NextResponse.redirect(new URL('/signup?error=google_oauth', request.url))
+    const res = NextResponse.redirect(new URL('/login?error=google_oauth', request.url))
     res.cookies.set('oauth_state', '', { path: '/', maxAge: 0 })
     return res
   }

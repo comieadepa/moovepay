@@ -38,6 +38,10 @@ ASAAS_API_KEY=sk_live_XXXXX_OU_sk_test_XXXXX_DO_ASAAS
 
 NEXT_PUBLIC_SUPABASE_ANON_KEY=sb_publishable_XXXXX_DO_SUPABASE_XXXXX
 
+# URL pública canônica do app (recomendado p/ Google OAuth em produção)
+# Ex.: https://moovepay.com.br
+APP_ORIGIN=https://SEU-DOMINIO
+
 # ============================================================================
 # INSTRUÇÕES:
 # 1. No Vercel Dashboard, vá em: Settings → Environment Variables
@@ -50,6 +54,7 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=sb_publishable_XXXXX_DO_SUPABASE_XXXXX
 # 7. Redeploy o projeto para aplicar as mudanças
 # ============================================================================
 
+# IMPORTANTE: não cole segredos reais neste arquivo (ele é versionado no Git).
 # CHECKLIST DE PREENCHIMENTO:
 # [ ] NEXT_PUBLIC_SUPABASE_URL
 # [ ] SUPABASE_SERVICE_ROLE_KEY
@@ -62,3 +67,4 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=sb_publishable_XXXXX_DO_SUPABASE_XXXXX
 # [ ] NEXT_PUBLIC_ASAAS_API_URL
 # [ ] ASAAS_API_KEY
 # [ ] NEXT_PUBLIC_SUPABASE_ANON_KEY
+# [ ] APP_ORIGIN

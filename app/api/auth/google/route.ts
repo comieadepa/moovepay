@@ -2,6 +2,26 @@ import { NextRequest, NextResponse } from 'next/server'
 
 export const dynamic = 'force-dynamic'
 
+function normalizeOrigin(origin: string) {
+  return origin.replace(/\/+$/, '')
+}
+
+function getCanonicalOrigin(request: NextRequest) {
+  const explicit =
+    process.env.APP_ORIGIN ||
+    process.env.APP_URL ||
+    process.env.NEXT_PUBLIC_APP_ORIGIN ||
+    process.env.NEXT_PUBLIC_APP_URL
+
+  if (explicit) return normalizeOrigin(explicit)
+
+  if (process.env.VERCEL_URL) {
+    return normalizeOrigin(`https://${process.env.VERCEL_URL}`)
+  }
+
+  return normalizeOrigin(request.nextUrl.origin)
+}
+
 function randomState() {
   return (
     globalThis.crypto?.randomUUID?.() ??
@@ -13,11 +33,17 @@ export async function GET(request: NextRequest) {
   const clientId = process.env.GOOGLE_CLIENT_ID
 
   if (!clientId) {
-    return NextResponse.redirect(new URL('/signup?error=google_not_configured', request.url))
+    return NextResponse.redirect(new URL('/login?error=google_not_configured', request.url))
+  }
+
+  const canonicalOrigin = getCanonicalOrigin(request)
+  if (canonicalOrigin && normalizeOrigin(request.nextUrl.origin) !== canonicalOrigin) {
+    const canonicalUrl = new URL(`${request.nextUrl.pathname}${request.nextUrl.search}`, canonicalOrigin)
+    return NextResponse.redirect(canonicalUrl)
   }
 
   const state = randomState()
-  const redirectUri = `${request.nextUrl.origin}/api/auth/google/callback`
+  const redirectUri = new URL('/api/auth/google/callback', canonicalOrigin).toString()
 
   const authUrl = new URL('https://accounts.google.com/o/oauth2/v2/auth')
   authUrl.searchParams.set('client_id', clientId)
