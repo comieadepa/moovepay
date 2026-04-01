@@ -22,23 +22,31 @@ export async function POST(request: NextRequest) {
     }
 
     // Comparação com trim() para evitar problemas com espaços em branco
+    console.log(`[ADMIN LOGIN DEBUG] Recebido: "${validatedData.adminCode}" | Esperado: "${requiredAdminCode}" | Recebido (trim): "${validatedData.adminCode.trim()}" | Esperado (trim): "${requiredAdminCode.trim()}"`)
     if (validatedData.adminCode.trim() !== requiredAdminCode.trim()) {
-      console.log(`[DEBUG] Código fornecido: "${validatedData.adminCode.trim()}" | Código esperado: "${requiredAdminCode.trim()}"`)
+      console.error(`[ADMIN LOGIN] Código inválido: "${validatedData.adminCode.trim()}" != "${requiredAdminCode.trim()}"`)
       return NextResponse.json({ error: 'Código do admin inválido' }, { status: 401 })
     }
 
     const user = await getUserByEmail(validatedData.email)
     if (!user) {
+      console.error(`[ADMIN LOGIN] Usuário não encontrado: ${validatedData.email}`)
       return NextResponse.json({ error: 'Email ou senha inválidos' }, { status: 401 })
     }
 
+    console.log(`[ADMIN LOGIN] Usuário encontrado: ${user.id} | email: ${user.email}`)
+
     const passwordMatch = await verifyPassword(validatedData.password, (user as any).password)
+    console.log(`[ADMIN LOGIN] Verificação de senha: ${passwordMatch ? 'OK' : 'FALHOU'}`)
     if (!passwordMatch) {
+      console.error(`[ADMIN LOGIN] Senha incorreta para ${validatedData.email}`)
       return NextResponse.json({ error: 'Email ou senha inválidos' }, { status: 401 })
     }
 
     const role = String((user as any).role || 'user')
+    console.log(`[ADMIN LOGIN] Role do usuário: ${role}`)
     if (!STAFF_ROLES.has(role)) {
+      console.error(`[ADMIN LOGIN] Role inválida para staff: ${role}`)
       return NextResponse.json({ error: 'Acesso restrito à equipe administrativa' }, { status: 403 })
     }
 
