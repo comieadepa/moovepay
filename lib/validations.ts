@@ -17,7 +17,7 @@ export const loginSchema = z.object({
 })
 
 export const adminLoginSchema = loginSchema.extend({
-  adminCode: z.string().min(1, 'Código do admin é obrigatório'),
+  adminCode: z.string().min(1, 'Código do admin é obrigatório').transform(v => v.trim()),
 })
 
 // ==================== PERFIL ====================

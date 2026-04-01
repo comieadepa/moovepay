@@ -21,7 +21,9 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    if (validatedData.adminCode !== requiredAdminCode) {
+    // Comparação com trim() para evitar problemas com espaços em branco
+    if (validatedData.adminCode.trim() !== requiredAdminCode.trim()) {
+      console.log(`[DEBUG] Código fornecido: "${validatedData.adminCode.trim()}" | Código esperado: "${requiredAdminCode.trim()}"`)
       return NextResponse.json({ error: 'Código do admin inválido' }, { status: 401 })
     }
 
