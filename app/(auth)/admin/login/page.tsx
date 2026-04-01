@@ -26,7 +26,7 @@ export default function AdminLoginPage() {
 
   const form = useForm<AdminLoginInput>({
     resolver: zodResolver(adminLoginSchema),
-    defaultValues: { email: '', password: '', adminCode: '' },
+    defaultValues: { email: '', password: '' },
   })
 
   async function onSubmit(data: AdminLoginInput) {
@@ -81,20 +81,6 @@ export default function AdminLoginPage() {
 
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-              <FormField
-                control={form.control}
-                name="adminCode"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Código do Admin</FormLabel>
-                    <FormControl>
-                      <Input type="password" placeholder="Código de acesso da equipe" autoComplete="off" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
               <FormField
                 control={form.control}
                 name="email"

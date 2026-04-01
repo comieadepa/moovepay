@@ -16,9 +16,7 @@ export const loginSchema = z.object({
   password: z.string().min(1, 'Senha é obrigatória'),
 })
 
-export const adminLoginSchema = loginSchema.extend({
-  adminCode: z.string().min(1, 'Código do admin é obrigatório').transform(v => v.trim()),
-})
+export const adminLoginSchema = loginSchema
 
 // ==================== PERFIL ====================
 const emptyToUndefined = (v: unknown) => {
