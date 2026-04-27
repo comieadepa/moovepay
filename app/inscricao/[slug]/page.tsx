@@ -334,20 +334,20 @@ export default function InscricaoEventoPage() {
     <div className="min-h-screen bg-slate-100">
       {/* Banner */}
       {event.bannerUrl ? (
-        <div className="w-full max-h-56 overflow-hidden">
-          <img src={event.bannerUrl} alt={event.name} className="w-full object-cover" />
+        <div className="w-full overflow-hidden" style={{ maxHeight: 220 }}>
+          <img src={event.bannerUrl} alt={event.name} className="w-full object-cover object-top" />
         </div>
       ) : (
-        <div className="h-32 bg-gradient-to-r from-blue-900 via-blue-800 to-indigo-900" />
+        <div className="h-28 bg-gradient-to-r from-blue-900 via-blue-800 to-indigo-900" />
       )}
 
-      {/* Title bar */}
-      <div className="bg-blue-800 px-4 py-4">
-        <div className="max-w-lg mx-auto">
-          <h1 className="text-white font-bold text-lg leading-tight">
+      {/* Barra azul — título */}
+      <div className="bg-blue-800 px-4 py-3">
+        <div className="max-w-md mx-auto">
+          <h1 className="text-white font-bold text-base leading-snug">
             {event.name} — Inscrições
           </h1>
-          <p className="text-blue-200 text-sm mt-0.5">
+          <p className="text-blue-200 text-xs mt-0.5">
             {isFree
               ? 'Inscrição gratuita — garanta sua vaga!'
               : 'Complete o pagamento e garanta sua vaga no evento!'}
@@ -355,44 +355,33 @@ export default function InscricaoEventoPage() {
         </div>
       </div>
 
-      <div className="max-w-lg mx-auto px-4 py-6 space-y-4">
-        {/* Step indicator */}
-        <div className="bg-white rounded-2xl px-6 py-4 shadow-sm">
-          <div className="flex items-center justify-between">
+      <div className="max-w-md mx-auto px-4 py-5 space-y-4">
+
+        {/* Step indicator — borda âmbar */}
+        <div className="bg-white rounded-xl border-2 border-amber-300 px-5 py-3">
+          <div className="flex items-center">
             {steps.map((step, i) => (
-              <div key={i} className="flex items-center flex-1">
-                <div className="flex flex-col items-center gap-1 flex-shrink-0">
+              <div key={i} className="flex items-center flex-1 min-w-0">
+                <div className="flex flex-col items-center gap-0.5 flex-shrink-0">
                   <div
-                    className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold border-2 transition-colors ${
-                      i === currentStep
-                        ? 'bg-blue-600 border-blue-600 text-white'
-                        : i < currentStep
+                    className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold border-2 ${
+                      i <= currentStep
                         ? 'bg-blue-600 border-blue-600 text-white'
                         : 'bg-white border-slate-300 text-slate-400'
                     }`}
                   >
                     {step.icon ? (
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
                       </svg>
-                    ) : (
-                      step.num
-                    )}
+                    ) : step.num}
                   </div>
-                  <span
-                    className={`text-[10px] font-semibold tracking-wide ${
-                      i <= currentStep ? 'text-blue-600' : 'text-slate-400'
-                    }`}
-                  >
+                  <span className={`text-[9px] font-bold tracking-wider ${i <= currentStep ? 'text-blue-600' : 'text-slate-400'}`}>
                     {step.label}
                   </span>
                 </div>
                 {i < steps.length - 1 && (
-                  <div
-                    className={`flex-1 h-0.5 mx-2 mb-4 ${
-                      i < currentStep ? 'bg-blue-600' : 'bg-slate-200'
-                    }`}
-                  />
+                  <div className={`flex-1 h-px mx-1 mb-4 ${i < currentStep ? 'bg-blue-600' : 'bg-slate-200'}`} />
                 )}
               </div>
             ))}
@@ -400,70 +389,68 @@ export default function InscricaoEventoPage() {
         </div>
 
         {/* Como funciona */}
-        <div className="bg-amber-50 border-l-4 border-amber-400 rounded-xl p-4">
-          <p className="text-amber-800 font-semibold text-sm flex items-center gap-2 mb-1">
+        <div className="bg-amber-50 border border-amber-300 rounded-xl p-3.5">
+          <p className="text-amber-800 font-semibold text-sm flex items-center gap-1.5 mb-1">
             <span>📋</span> Como funciona
           </p>
           <p className="text-amber-700 text-sm leading-relaxed">
             Preencha seus dados abaixo, clique em{' '}
-            <em className="font-semibold">&quot;Ir para o Pagamento&quot;</em>
+            <em className="font-semibold not-italic">&ldquo;{isFree ? 'Confirmar Inscrição' : 'Ir para o Pagamento'}&rdquo;</em>
             {isFree
               ? ' e sua inscrição será confirmada automaticamente!'
               : ', complete o PIX/cartão e você voltará automaticamente com a inscrição liberada!'}
           </p>
         </div>
 
-        {/* Error */}
+        {/* Erro */}
         {error && (
           <div className="bg-red-50 border border-red-200 rounded-xl p-3 text-sm text-red-700">
             {error}
           </div>
         )}
 
-        {/* Form */}
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            {/* Tipo de inscrição */}
-            {event.inscriptionTypes.length > 1 && (
-              <div className="bg-white rounded-2xl shadow-sm p-4 space-y-1">
-                <FormField
-                  control={form.control}
-                  name="inscriptionTypeId"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="text-sm font-semibold text-slate-700">Tipo de inscrição *</FormLabel>
-                      <FormControl>
-                        <Select
-                          {...field}
-                          className="h-12 rounded-xl border-slate-200 text-slate-800"
-                        >
-                          {event.inscriptionTypes.map((t) => (
-                            <option key={t.id} value={t.id}>
-                              {t.name} — {Number(t.value) <= 0 ? 'Gratuito' : money(Number(t.value || 0))}
-                            </option>
-                          ))}
-                        </Select>
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-            )}
+        {/* Tipo de inscrição (só quando há mais de um) */}
+        {event.inscriptionTypes.length > 1 && (
+          <div className="bg-white rounded-xl px-4 pt-3 pb-4 shadow-sm">
+            <Form {...form}>
+              <FormField
+                control={form.control}
+                name="inscriptionTypeId"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-sm font-semibold text-slate-700">Tipo de inscrição *</FormLabel>
+                    <FormControl>
+                      <Select {...field} className="h-11 rounded-lg border-slate-200 text-slate-800 mt-1">
+                        {event.inscriptionTypes.map((t) => (
+                          <option key={t.id} value={t.id}>
+                            {t.name} — {Number(t.value) <= 0 ? 'Gratuito' : money(Number(t.value || 0))}
+                          </option>
+                        ))}
+                      </Select>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </Form>
+          </div>
+        )}
 
-            {/* Participantes */}
+        {/* Formulário principal — cartão único */}
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)}>
             {participantFields.map((p, idx) => (
-              <div key={p.id} className="bg-white rounded-2xl shadow-sm p-5 space-y-4">
+              <div key={p.id} className="bg-white rounded-xl shadow-sm px-4 pt-4 pb-2 mb-4 space-y-3">
                 {participantFields.length > 1 && (
-                  <div className="flex items-center gap-2 pb-1 border-b border-slate-100">
-                    <div className="w-6 h-6 rounded-full bg-blue-600 text-white text-xs font-bold flex items-center justify-center">
+                  <div className="flex items-center gap-2 pb-2 border-b border-slate-100">
+                    <div className="w-5 h-5 rounded-full bg-blue-600 text-white text-[10px] font-bold flex items-center justify-center">
                       {idx + 1}
                     </div>
-                    <span className="text-sm font-semibold text-slate-700">Participante {idx + 1}</span>
+                    <span className="text-sm font-semibold text-slate-600">Participante {idx + 1}</span>
                   </div>
                 )}
 
-                {/* Nome */}
+                {/* Nome — linha inteira */}
                 <FormField
                   control={form.control}
                   name={`participants.${idx}.fullName` as any}
@@ -471,30 +458,26 @@ export default function InscricaoEventoPage() {
                     <FormItem>
                       <FormLabel className="text-sm font-semibold text-slate-700">Nome completo *</FormLabel>
                       <FormControl>
-                        <Input
-                          placeholder="Seu nome completo"
-                          className="h-12 rounded-xl border-slate-200"
-                          {...field}
-                        />
+                        <Input placeholder="Seu nome completo" className="h-11 rounded-lg border-slate-200 mt-0.5" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
 
-                {/* Telefone + Email */}
+                {/* Telefone + Email — 2 colunas */}
                 <div className="grid grid-cols-2 gap-3">
                   <FormField
                     control={form.control}
                     name={`participants.${idx}.whatsapp` as any}
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel className="text-sm font-semibold text-slate-700">Telefone</FormLabel>
+                        <FormLabel className="text-sm font-semibold text-slate-700">Telefone *</FormLabel>
                         <FormControl>
                           <Input
                             placeholder="(91) 99999-9999"
                             inputMode="numeric"
-                            className="h-12 rounded-xl border-slate-200"
+                            className="h-11 rounded-lg border-slate-200 mt-0.5"
                             value={field.value as string}
                             onChange={(e) => field.onChange(maskPhone(e.target.value))}
                           />
@@ -510,12 +493,7 @@ export default function InscricaoEventoPage() {
                       <FormItem>
                         <FormLabel className="text-sm font-semibold text-slate-700">Email *</FormLabel>
                         <FormControl>
-                          <Input
-                            type="email"
-                            placeholder="voce@email.com"
-                            className="h-12 rounded-xl border-slate-200"
-                            {...field}
-                          />
+                          <Input type="email" placeholder="voce@email.com" className="h-11 rounded-lg border-slate-200 mt-0.5" {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -523,7 +501,7 @@ export default function InscricaoEventoPage() {
                   />
                 </div>
 
-                {/* CPF */}
+                {/* CPF — linha inteira */}
                 <FormField
                   control={form.control}
                   name={`participants.${idx}.cpf` as any}
@@ -534,7 +512,7 @@ export default function InscricaoEventoPage() {
                         <Input
                           placeholder="000.000.000-00"
                           inputMode="numeric"
-                          className="h-12 rounded-xl border-slate-200"
+                          className="h-11 rounded-lg border-slate-200 mt-0.5"
                           value={field.value as string}
                           onChange={(e) => field.onChange(maskCpf(e.target.value))}
                         />
@@ -544,117 +522,125 @@ export default function InscricaoEventoPage() {
                   )}
                 />
 
-                {/* Campos personalizados */}
-                {customFields.length > 0 && (
-                  <div className="space-y-4 pt-2">
-                    {customFields.map((f) => {
-                      const baseName = `participants.${idx}.customData` as any
-                      const current = (form.getValues(baseName) as any) || {}
-                      const setField = (value: any) =>
-                        form.setValue(baseName, { ...current, [f.key]: value }, { shouldDirty: true })
+                {/* Campos personalizados do evento */}
+                {customFields.length > 0 && (() => {
+                  const baseName = `participants.${idx}.customData` as any
+                  const current = (form.getValues(baseName) as any) || {}
+                  const setField = (key: string, value: any) =>
+                    form.setValue(baseName, { ...current, [key]: value }, { shouldDirty: true })
 
-                      return (
-                        <div key={f.key} className="space-y-1">
+                  // Agrupa em pares para layout 2 colunas (exceto textarea/checkbox)
+                  const inlineFields = customFields.filter(f => f.type !== 'textarea' && f.type !== 'checkbox')
+                  const blockFields = customFields.filter(f => f.type === 'textarea' || f.type === 'checkbox')
+
+                  return (
+                    <>
+                      {/* Campos inline: grid de 2 colunas */}
+                      {inlineFields.length > 0 && (
+                        <div className={`grid gap-3 ${inlineFields.length === 1 ? 'grid-cols-1' : 'grid-cols-2'}`}>
+                          {inlineFields.map((f) => (
+                            <div key={f.key} className="space-y-0.5">
+                              <label className="block text-sm font-semibold text-slate-700">
+                                {f.label}{f.required ? ' *' : ''}
+                              </label>
+                              {f.type === 'select' ? (
+                                <Select
+                                  className="h-11 rounded-lg border-slate-200"
+                                  value={current?.[f.key] ?? ''}
+                                  onChange={(e) => setField(f.key, e.target.value)}
+                                >
+                                  <option value="">Selecionar...</option>
+                                  {(f.options || []).map((opt) => (
+                                    <option key={opt} value={opt}>{opt}</option>
+                                  ))}
+                                </Select>
+                              ) : (
+                                <Input
+                                  type={f.type === 'number' ? 'number' : f.type === 'date' ? 'date' : 'text'}
+                                  placeholder={f.placeholder || ''}
+                                  className="h-11 rounded-lg border-slate-200"
+                                  value={current?.[f.key] ?? ''}
+                                  onChange={(e) => setField(f.key, e.target.value)}
+                                />
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                      {/* Campos bloco: full width */}
+                      {blockFields.map((f) => (
+                        <div key={f.key} className="space-y-0.5">
                           <label className="block text-sm font-semibold text-slate-700">
                             {f.label}{f.required ? ' *' : ''}
                           </label>
                           {f.type === 'textarea' ? (
                             <Textarea
-                              className="rounded-xl border-slate-200"
+                              className="rounded-lg border-slate-200"
                               placeholder={f.placeholder || ''}
                               value={current?.[f.key] ?? ''}
-                              onChange={(e) => setField(e.target.value)}
+                              onChange={(e) => setField(f.key, e.target.value)}
                             />
-                          ) : f.type === 'select' ? (
-                            <Select
-                              className="h-12 rounded-xl border-slate-200"
-                              value={current?.[f.key] ?? ''}
-                              onChange={(e) => setField(e.target.value)}
-                            >
-                              <option value="">Selecionar...</option>
-                              {(f.options || []).map((opt) => (
-                                <option key={opt} value={opt}>{opt}</option>
-                              ))}
-                            </Select>
-                          ) : f.type === 'checkbox' ? (
+                          ) : (
                             <label className="flex items-center gap-2 mt-1 text-sm text-slate-700 cursor-pointer">
                               <input
                                 type="checkbox"
                                 className="w-4 h-4 accent-blue-600"
                                 checked={Boolean(current?.[f.key])}
-                                onChange={(e) => setField(e.target.checked)}
+                                onChange={(e) => setField(f.key, e.target.checked)}
                               />
                               {f.placeholder || 'Marcar'}
                             </label>
-                          ) : (
-                            <Input
-                              type={f.type === 'number' ? 'number' : f.type === 'date' ? 'date' : 'text'}
-                              placeholder={f.placeholder || ''}
-                              className="h-12 rounded-xl border-slate-200"
-                              value={current?.[f.key] ?? ''}
-                              onChange={(e) => setField(e.target.value)}
-                            />
                           )}
                         </div>
-                      )
-                    })}
+                      ))}
+                    </>
+                  )
+                })()}
+
+                {/* Valor da inscrição (readonly) + Quantidade */}
+                <div className="grid grid-cols-2 gap-3 pb-1">
+                  <FormField
+                    control={form.control}
+                    name="quantity"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-sm font-semibold text-slate-700">Quantidade</FormLabel>
+                        <FormControl>
+                          <div className="flex items-center gap-1.5 mt-0.5">
+                            <button
+                              type="button"
+                              className="w-9 h-11 rounded-lg border border-slate-200 bg-slate-50 text-slate-600 font-bold text-base hover:bg-slate-100 flex-shrink-0"
+                              onClick={() => field.onChange(Math.max(1, Number(field.value || 1) - 1))}
+                            >−</button>
+                            <span className="flex-1 text-center font-bold text-slate-900">{field.value}</span>
+                            <button
+                              type="button"
+                              className="w-9 h-11 rounded-lg border border-slate-200 bg-slate-50 text-slate-600 font-bold text-base hover:bg-slate-100 flex-shrink-0"
+                              onClick={() => field.onChange(Math.min(50, Number(field.value || 1) + 1))}
+                            >+</button>
+                          </div>
+                        </FormControl>
+                      </FormItem>
+                    )}
+                  />
+                  <div className="space-y-0.5">
+                    <label className="block text-sm font-semibold text-slate-700">Valor da inscrição</label>
+                    <input
+                      readOnly
+                      tabIndex={-1}
+                      value={isFree ? 'Gratuito' : money(totalValue)}
+                      className="h-11 w-full rounded-lg border border-slate-200 bg-slate-50 px-3 text-slate-500 text-sm cursor-default focus:outline-none mt-0.5"
+                    />
                   </div>
-                )}
+                </div>
               </div>
             ))}
 
-            {/* Quantidade — só exibe se mais de 1 tipo permitir múltiplos */}
-            <div className="bg-white rounded-2xl shadow-sm p-4">
-              <FormField
-                control={form.control}
-                name="quantity"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="text-sm font-semibold text-slate-700">Quantidade de inscrições</FormLabel>
-                    <FormControl>
-                      <div className="flex items-center gap-3 mt-1">
-                        <button
-                          type="button"
-                          className="w-10 h-10 rounded-xl border border-slate-200 bg-slate-50 text-slate-700 font-bold hover:bg-slate-100"
-                          onClick={() => field.onChange(Math.max(1, Number(field.value || 1) - 1))}
-                        >
-                          −
-                        </button>
-                        <span className="w-10 text-center font-bold text-slate-900 text-lg">{field.value}</span>
-                        <button
-                          type="button"
-                          className="w-10 h-10 rounded-xl border border-slate-200 bg-slate-50 text-slate-700 font-bold hover:bg-slate-100"
-                          onClick={() => field.onChange(Math.min(50, Number(field.value || 1) + 1))}
-                        >
-                          +
-                        </button>
-                        <span className="text-sm text-slate-500 ml-2">
-                          {Number(quantity || 1) > 1 ? `${Number(quantity)} inscrições` : '1 inscrição'}
-                        </span>
-                      </div>
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-
-            {/* Valor da inscrição (readonly) */}
-            <div className="bg-white rounded-2xl shadow-sm p-4">
-              <label className="block text-sm font-semibold text-slate-700 mb-1">Valor da inscrição</label>
-              <input
-                readOnly
-                tabIndex={-1}
-                value={isFree ? 'Gratuito' : money(totalValue)}
-                className="h-12 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 text-slate-500 text-sm cursor-default focus:outline-none"
-              />
-            </div>
-
-            {/* CTA */}
+            {/* Botão CTA */}
             <button
               type="submit"
               disabled={isSubmitting}
-              className="w-full h-14 bg-amber-500 hover:bg-amber-600 disabled:opacity-60 disabled:cursor-not-allowed text-white font-bold text-base rounded-2xl shadow-md shadow-amber-500/30 flex items-center justify-center gap-2 transition-colors"
+              className="w-full h-14 bg-amber-500 hover:bg-amber-600 active:bg-amber-700 disabled:opacity-60 disabled:cursor-not-allowed text-white font-bold text-base rounded-xl shadow-lg shadow-amber-400/30 flex items-center justify-center gap-2 transition-colors"
             >
               {isSubmitting ? (
                 <>
@@ -671,8 +657,8 @@ export default function InscricaoEventoPage() {
               )}
             </button>
 
-            <p className="text-center text-xs text-slate-400 pb-4">
-              Ao continuar, você concorda em fornecer seus dados para fins de comunicação do evento.
+            <p className="text-center text-xs text-slate-400 py-4">
+              Sistema de inscrição online · MoovePay
             </p>
           </form>
         </Form>
