@@ -4,11 +4,6 @@ import { createSupportTicketSchema } from '@/lib/validations'
 import { supabase } from '@/lib/supabase-server'
 import { isTenantMember } from '@/lib/rbac'
 
-function dbNotReady(error: any) {
-  const message = String(error?.message || '')
-  return message.includes('relation') && message.includes('SupportTicket')
-}
-
 export async function GET(request: NextRequest) {
   try {
     const token = request.cookies.get('token')?.value
@@ -19,30 +14,15 @@ export async function GET(request: NextRequest) {
 
     const tenantId = verified.tenantId || verified.userId
     const member = await isTenantMember(tenantId, verified.userId)
-
-    // Se multi-tenant ainda não existe, cai no modo legado: lista por creatorId.
-    const legacyMode = member?.id === 'legacy'
-    if (!member && !legacyMode) return NextResponse.json({ error: 'Não autorizado (tenant)' }, { status: 403 })
+    if (!member) return NextResponse.json({ error: 'Não autorizado (tenant)' }, { status: 403 })
 
     const { data: tickets, error } = await supabase
       .from('SupportTicket')
       .select('*')
-      // se tiver multi-tenant: tenantId; se não: creatorId
-      .eq(legacyMode ? 'creatorId' : 'tenantId', legacyMode ? verified.userId : tenantId)
+      .eq('tenantId', tenantId)
       .order('updatedAt', { ascending: false })
 
-    if (error) {
-      if (dbNotReady(error)) {
-        return NextResponse.json(
-          {
-            error: 'Sistema de suporte ainda não configurado no banco.',
-            hint: 'Aplique a migration supabase/migrations/20260203000000_support_tickets.sql no Supabase.',
-          },
-          { status: 500 }
-        )
-      }
-      throw error
-    }
+    if (error) throw error
 
     return NextResponse.json({ success: true, tickets: tickets || [] }, { status: 200 })
   } catch (error) {
@@ -61,20 +41,18 @@ export async function POST(request: NextRequest) {
 
     const tenantId = verified.tenantId || verified.userId
     const member = await isTenantMember(tenantId, verified.userId)
-    const legacyMode = member?.id === 'legacy'
-    if (!member && !legacyMode) return NextResponse.json({ error: 'Não autorizado (tenant)' }, { status: 403 })
+    if (!member) return NextResponse.json({ error: 'Não autorizado (tenant)' }, { status: 403 })
 
     const body = await request.json()
     const validated = createSupportTicketSchema.parse(body)
 
     const payload: any = {
       creatorId: verified.userId,
+      tenantId,
       subject: validated.subject,
       status: 'open',
       priority: validated.priority,
     }
-
-    if (!legacyMode) payload.tenantId = tenantId
 
     const { data: ticket, error: ticketError } = await supabase
       .from('SupportTicket')
@@ -82,18 +60,7 @@ export async function POST(request: NextRequest) {
       .select()
       .single()
 
-    if (ticketError) {
-      if (dbNotReady(ticketError)) {
-        return NextResponse.json(
-          {
-            error: 'Sistema de suporte ainda não configurado no banco.',
-            hint: 'Aplique a migration supabase/migrations/20260203000000_support_tickets.sql no Supabase.',
-          },
-          { status: 500 }
-        )
-      }
-      throw ticketError
-    }
+    if (ticketError) throw ticketError
 
     const { error: messageError } = await supabase.from('SupportTicketMessage').insert({
       ticketId: ticket.id,

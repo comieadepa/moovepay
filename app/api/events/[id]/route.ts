@@ -35,20 +35,13 @@ export async function GET(
         inscriptionTypes:InscriptionType(*)
       `)
       .eq('id', params.id)
+      .eq('tenantId', tenantId)
       .single()
 
     if (error || !event) {
       return NextResponse.json(
         { error: 'Evento não encontrado' },
         { status: 404 }
-      )
-    }
-
-    // Verificar tenant
-    if ((event as any).tenantId && (event as any).tenantId !== tenantId) {
-      return NextResponse.json(
-        { error: 'Não autorizado' },
-        { status: 403 }
       )
     }
 

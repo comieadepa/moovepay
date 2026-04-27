@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { registrationSchema } from '@/lib/validations'
 import { supabase, createRegistration } from '@/lib/supabase-server'
 import { sendEmail, emailTemplates } from '@/lib/email'
+import { verifyToken } from '@/lib/auth'
 
 export async function POST(request: NextRequest) {
   try {
@@ -83,7 +84,7 @@ export async function POST(request: NextRequest) {
         cpf: p.cpf,
         customData: p.customData,
         totalValue: inscriptionType.value,
-        status: 'pending',
+        status: Number(inscriptionType.value) === 0 ? 'confirmed' : 'pending',
         cartId,
       } as any)
       registrations.push(r)
@@ -136,10 +137,47 @@ export async function POST(request: NextRequest) {
 
 export async function GET(request: NextRequest) {
   try {
-    // Buscar inscrições por email
+    // Verificar autenticação
+    const token = request.cookies.get('token')?.value
+    if (!token) {
+      return NextResponse.json({ error: 'Não autenticado' }, { status: 401 })
+    }
+    const verified = verifyToken(token)
+    if (!verified) {
+      return NextResponse.json({ error: 'Token inválido' }, { status: 401 })
+    }
+
     const searchParams = request.nextUrl.searchParams
     const email = searchParams.get('email')
     const eventId = searchParams.get('eventId')
+
+    // Restrição de acesso:
+    // - email: somente o próprio usuário autenticado pode consultar suas inscrições
+    // - eventId: somente membros do tenant dono do evento
+    if (email && email !== verified.email) {
+      return NextResponse.json({ error: 'Não autorizado' }, { status: 403 })
+    }
+
+    if (eventId) {
+      const { data: event } = await supabase
+        .from('Event')
+        .select('tenantId, creatorId')
+        .eq('id', eventId)
+        .maybeSingle()
+
+      if (!event) {
+        return NextResponse.json({ error: 'Evento não encontrado' }, { status: 404 })
+      }
+
+      const tenantId = verified.tenantId || verified.userId
+      const ownsEvent =
+        event.tenantId === tenantId ||
+        event.creatorId === verified.userId
+
+      if (!ownsEvent) {
+        return NextResponse.json({ error: 'Não autorizado' }, { status: 403 })
+      }
+    }
 
     let query = supabase
       .from('Registration')

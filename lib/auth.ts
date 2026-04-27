@@ -1,7 +1,10 @@
 import bcrypt from 'bcryptjs'
 import jwt from 'jsonwebtoken'
 
-const JWT_SECRET = process.env.JWT_SECRET || 'seu-secret-jwt'
+if (!process.env.JWT_SECRET) {
+  throw new Error('Variável de ambiente JWT_SECRET não definida')
+}
+const JWT_SECRET = process.env.JWT_SECRET
 
 export type JwtPayload = {
   userId: string

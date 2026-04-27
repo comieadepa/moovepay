@@ -105,15 +105,54 @@ export default function CheckoutPage() {
         }
       }
 
-      // TODO: Criar pagamento quando ASAAS estiver disponível.
-      // Por enquanto, apenas limpa carrinho e mostra confirmação.
+      // Criar pagamento no ASAAS (somente se total > 0)
+      const allIds = registrations.map((r: any) => r.id)
+      const firstCartId = registrations.find((r: any) => r.cartId)?.cartId
+      const firstPayer = items[0]?.participants?.[0]
+
+      // Evento gratuito: pula o checkout financeiro e redireciona direto
+      if (total === 0) {
+        clearCart()
+        const qs = new URLSearchParams({
+          registrations: String(allIds.length),
+          total: '0.00',
+          method: 'free',
+        })
+        router.push(`/confirmacao?${qs.toString()}`)
+        return
+      }
+
+      const checkoutRes = await fetch('/api/checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          cartId: firstCartId,
+          registrationIds: allIds,
+          method: paymentMethod,
+          totalValue: total,
+          payer: {
+            name: firstPayer.fullName,
+            email: firstPayer.email,
+            cpf: firstPayer.cpf,
+            whatsapp: firstPayer.whatsapp,
+          },
+        }),
+      })
+
+      const checkoutData = await checkoutRes.json().catch(() => ({} as any))
+      if (!checkoutRes.ok) {
+        throw new Error(checkoutData?.error || 'Erro ao criar pagamento')
+      }
+
       clearCart()
-      
-      // Redirecionar para página de confirmação
+
       const qs = new URLSearchParams({
-        registrations: String(registrations.length),
+        registrations: String(allIds.length),
         total: String(Number(total || 0).toFixed(2)),
         method: paymentMethod,
+        paymentId: checkoutData.payment?.id || '',
+        ...(checkoutData.payment?.pixCopyPaste ? { pixCopyPaste: checkoutData.payment.pixCopyPaste } : {}),
+        ...(checkoutData.payment?.boletoUrl ? { boletoUrl: checkoutData.payment.boletoUrl } : {}),
       })
       router.push(`/confirmacao?${qs.toString()}`)
     } catch (err) {
@@ -136,8 +175,22 @@ export default function CheckoutPage() {
         )}
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Payment Methods */}
+          {/* Payment Methods — oculto em eventos gratuitos */}
           <div className="lg:col-span-2 space-y-6">
+            {total === 0 ? (
+              <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-6 text-center">
+                <div className="w-14 h-14 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                  <svg className="w-7 h-7 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </div>
+                <h3 className="text-lg font-semibold text-emerald-800 mb-1">Evento Gratuito</h3>
+                <p className="text-sm text-emerald-700">
+                  Nenhum pagamento necessário. Clique em &quot;Confirmar Inscrição&quot; para finalizar.
+                </p>
+              </div>
+            ) : (
+              <>
             {/* PIX */}
             <Card>
               <CardContent className="pt-6">
@@ -261,6 +314,8 @@ export default function CheckoutPage() {
                 </label>
               </CardContent>
             </Card>
+            </>
+            )}
           </div>
 
           {/* Order Summary */}
@@ -293,7 +348,7 @@ export default function CheckoutPage() {
                     </div>
                   )}
                   <div className="flex justify-between">
-                    <span className="text-slate-700">Taxa da plataforma (10%):</span>
+                    <span className="text-slate-700">Taxa da plataforma ({platformFee > 0 ? '10%' : 'gratuito'}):</span>
                     <span className="text-slate-900">{money(platformFee)}</span>
                   </div>
                 </div>
@@ -312,7 +367,11 @@ export default function CheckoutPage() {
                   disabled={loading}
                   className="w-full bg-emerald-600 hover:bg-emerald-700 text-white h-12 font-semibold"
                 >
-                  {loading ? 'Processando...' : 'Confirmar Pagamento'}
+                  {loading
+                    ? 'Processando...'
+                    : total === 0
+                    ? 'Confirmar Inscrição Gratuita'
+                    : 'Confirmar Pagamento'}
                 </Button>
 
                 <Button

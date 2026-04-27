@@ -1,6 +1,8 @@
+import 'server-only'
 import axios from 'axios'
 
-const ASAAS_API_URL = process.env.NEXT_PUBLIC_ASAAS_API_URL
+// Prefer server-only var; fallback para manter compatibilidade com .env.local existente
+const ASAAS_API_URL = process.env.ASAAS_API_URL || process.env.NEXT_PUBLIC_ASAAS_API_URL
 const ASAAS_API_KEY = process.env.ASAAS_API_KEY
 
 const asaasClient = axios.create({
@@ -129,6 +131,70 @@ export async function refundPayment(id: string) {
     return response.data
   } catch (error) {
     console.error('Erro ao reembolsar pagamento:', error)
+    throw error
+  }
+}
+
+// ==================== CLIENTES ====================
+
+export interface AsaasCustomer {
+  id: string
+  name: string
+  email: string
+  cpfCnpj: string
+}
+
+export async function findOrCreateCustomer(data: {
+  name: string
+  email: string
+  cpfCnpj: string
+  mobilePhone?: string
+}): Promise<AsaasCustomer> {
+  // Busca cliente existente pelo CPF/CNPJ
+  const searchRes = await asaasClient.get('/customers', {
+    params: { cpfCnpj: data.cpfCnpj.replace(/\D/g, ''), limit: 1 },
+  })
+  const existing = searchRes.data?.data?.[0]
+  if (existing?.id) return existing as AsaasCustomer
+
+  // Cria novo cliente
+  const createRes = await asaasClient.post('/customers', {
+    name: data.name,
+    email: data.email,
+    cpfCnpj: data.cpfCnpj.replace(/\D/g, ''),
+    mobilePhone: data.mobilePhone,
+  })
+  return createRes.data as AsaasCustomer
+}
+
+// ==================== PAGAMENTO GENÉRICO ====================
+
+export interface AsaasGenericPaymentRequest {
+  customer: string
+  billingType: 'PIX' | 'BOLETO' | 'CREDIT_CARD'
+  value: number
+  dueDate: string
+  description: string
+  externalReference?: string
+}
+
+export async function createPayment(data: AsaasGenericPaymentRequest) {
+  try {
+    const response = await asaasClient.post('/payments', data)
+    return response.data
+  } catch (error) {
+    console.error('Erro ao criar pagamento:', error)
+    throw error
+  }
+}
+
+// Buscar QR Code PIX de um pagamento
+export async function getPixQrCode(paymentId: string): Promise<{ encodedImage: string; payload: string; expirationDate: string }> {
+  try {
+    const response = await asaasClient.get(`/payments/${paymentId}/pixQrCode`)
+    return response.data
+  } catch (error) {
+    console.error('Erro ao buscar QR Code PIX:', error)
     throw error
   }
 }

@@ -29,23 +29,13 @@ export function hasGlobalRole(ctx: AuthContext, allowed: string[]) {
 }
 
 export async function isTenantMember(tenantId: string, userId: string) {
-  try {
-    const { data, error } = await supabase
-      .from('TenantMember')
-      .select('id, role')
-      .eq('tenantId', tenantId)
-      .eq('userId', userId)
-      .maybeSingle()
+  const { data, error } = await supabase
+    .from('TenantMember')
+    .select('id, role')
+    .eq('tenantId', tenantId)
+    .eq('userId', userId)
+    .maybeSingle()
 
-    if (error) throw error
-    return data
-  } catch (error: any) {
-    const message = String(error?.message || '')
-    // Se a migration ainda não foi aplicada, volta ao comportamento antigo:
-    // o tenant do usuário é o próprio userId.
-    if (message.includes("Could not find the table 'public.TenantMember'")) {
-      return tenantId === userId ? { id: 'legacy', role: 'owner' } : null
-    }
-    throw error
-  }
+  if (error) throw error
+  return data
 }

@@ -4,23 +4,24 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
+import { QRCodeSVG } from 'qrcode.react'
 
 function ConfirmacaoPageContent() {
   const router = useRouter()
   const [registrations, setRegistrations] = useState('0')
   const [total, setTotal] = useState<string | null>(null)
   const [method, setMethod] = useState<string | null>(null)
+  const [pixCopyPaste, setPixCopyPaste] = useState<string | null>(null)
+  const [boletoUrl, setBoletoUrl] = useState<string | null>(null)
+  const [copied, setCopied] = useState(false)
 
   useEffect(() => {
-    // Get query params from window.location
     const params = new URLSearchParams(window.location.search)
-    const reg = params.get('registrations') || '0'
-    setRegistrations(reg)
-
-    const t = params.get('total')
-    const m = params.get('method')
-    setTotal(t)
-    setMethod(m)
+    setRegistrations(params.get('registrations') || '0')
+    setTotal(params.get('total'))
+    setMethod(params.get('method'))
+    setPixCopyPaste(params.get('pixCopyPaste'))
+    setBoletoUrl(params.get('boletoUrl'))
   }, [])
 
   const money = (value: number) => {
@@ -39,6 +40,7 @@ function ConfirmacaoPageContent() {
     if (m === 'pix') return 'PIX'
     if (m === 'card') return 'Cartão de crédito'
     if (m === 'boleto') return 'Boleto'
+    if (m === 'free') return 'Gratuito'
     return m
   }
 
@@ -91,6 +93,63 @@ function ConfirmacaoPageContent() {
                       </div>
                     )}
                   </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* PIX */}
+            {method === 'pix' && pixCopyPaste && (
+              <Card className="mb-6 bg-white border-blue-200">
+                <CardContent className="pt-6">
+                  <h3 className="font-semibold text-slate-900 mb-4 text-left">Pague via PIX</h3>
+                  <div className="flex flex-col items-center gap-4">
+                    <div className="p-3 bg-white border rounded-lg">
+                      <QRCodeSVG value={pixCopyPaste} size={180} level="H" />
+                    </div>
+                    <p className="text-sm text-slate-600 text-center">
+                      Escaneie o QR Code ou copie o código abaixo
+                    </p>
+                    <div className="w-full">
+                      <div className="flex gap-2 items-center">
+                        <code className="flex-1 text-xs bg-slate-100 border rounded p-2 break-all text-left font-mono">
+                          {pixCopyPaste}
+                        </code>
+                        <button
+                          className="shrink-0 px-3 py-2 bg-slate-900 text-white rounded text-sm font-medium hover:bg-slate-800"
+                          onClick={() => {
+                            navigator.clipboard.writeText(pixCopyPaste!)
+                            setCopied(true)
+                            setTimeout(() => setCopied(false), 2000)
+                          }}
+                        >
+                          {copied ? 'Copiado!' : 'Copiar'}
+                        </button>
+                      </div>
+                    </div>
+                    <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded px-3 py-2 text-center w-full">
+                      Após o pagamento, seu voucher será enviado por e-mail automaticamente.
+                    </p>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Boleto */}
+            {method === 'boleto' && boletoUrl && (
+              <Card className="mb-6 bg-white border-amber-200">
+                <CardContent className="pt-6">
+                  <h3 className="font-semibold text-slate-900 mb-3 text-left">Pague via Boleto</h3>
+                  <p className="text-sm text-slate-600 mb-4 text-left">
+                    O boleto vence em 1 dia útil. Após o pagamento, seu voucher será enviado por e-mail.
+                  </p>
+                  <a
+                    href={boletoUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="block w-full py-3 px-4 bg-amber-500 hover:bg-amber-600 text-white text-center font-semibold rounded-md transition-colors"
+                  >
+                    Abrir Boleto
+                  </a>
                 </CardContent>
               </Card>
             )}

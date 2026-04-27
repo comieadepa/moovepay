@@ -26,7 +26,7 @@ export default function AdminLoginPage() {
 
   const form = useForm<AdminLoginInput>({
     resolver: zodResolver(adminLoginSchema),
-    defaultValues: { email: '', password: '' },
+    defaultValues: { email: '', password: '', accessCode: '' },
   })
 
   async function onSubmit(data: AdminLoginInput) {
@@ -109,12 +109,25 @@ export default function AdminLoginPage() {
                 )}
               />
 
+              <FormField
+                control={form.control}
+                name="accessCode"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Código de Acesso</FormLabel>
+                    <FormControl>
+                      <Input type="password" placeholder="Código interno da equipe" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
               <Button type="submit" className="w-full" disabled={isLoading}>
                 {isLoading ? 'Entrando...' : 'Entrar no Admin'}
               </Button>
             </form>
           </Form>
-
           <div className="mt-6 border-t pt-4 space-y-2">
             <Link href="/login">
               <Button variant="ghost" size="sm" className="w-full">

@@ -52,18 +52,12 @@ export async function GET(request: NextRequest) {
 
     const tenantId = verified.tenantId || verified.userId
 
-    // Se multi-tenant ainda não foi aplicado no banco, caímos no modo legado.
     const member = await isTenantMember(tenantId, verified.userId)
-    const legacyMode = member?.id === 'legacy'
-    if (!member && !legacyMode) {
+    if (!member) {
       return NextResponse.json({ error: 'Não autorizado (tenant)' }, { status: 403 })
     }
 
-    // Buscar eventos do usuário
-    let events: any[] | null = null
-
-    // Tenta multi-tenant (tenantId); se a coluna não existir, usa creatorId.
-    const { data: eventsByTenant, error: tenantError } = await supabase
+    const { data: events, error: eventsError } = await supabase
       .from('Event')
       .select(`
         *,
@@ -73,26 +67,7 @@ export async function GET(request: NextRequest) {
       .eq('tenantId', tenantId)
       .order('createdAt', { ascending: false })
 
-    if (tenantError) {
-      const msg = String((tenantError as any)?.message || '')
-      if (msg.includes('tenantId') || msg.includes('column') || msg.includes('schema cache')) {
-        const { data: eventsByCreator, error: creatorError } = await supabase
-          .from('Event')
-          .select(`
-            *,
-            registrations:Registration(id),
-            payments:Payment(value, status)
-          `)
-          .eq('creatorId', verified.userId)
-          .order('createdAt', { ascending: false })
-        if (creatorError) throw creatorError
-        events = eventsByCreator
-      } else {
-        throw tenantError
-      }
-    } else {
-      events = eventsByTenant
-    }
+    if (eventsError) throw eventsError
 
     return NextResponse.json({ success: true, events }, { status: 200 })
   } catch (error) {
@@ -120,9 +95,8 @@ export async function POST(request: NextRequest) {
     const tenantId = verified.tenantId || verified.userId
     const member = await isTenantMember(tenantId, verified.userId)
 
-    // No modo legado, o usuário é o próprio owner.
     if (!member) return NextResponse.json({ error: 'Não autorizado (tenant)' }, { status: 403 })
-    if (member.id !== 'legacy' && !['owner', 'admin'].includes(member.role)) {
+    if (!['owner', 'admin'].includes(member.role)) {
       return NextResponse.json({ error: 'Não autorizado (tenant)' }, { status: 403 })
     }
 
@@ -142,10 +116,7 @@ export async function POST(request: NextRequest) {
       status: 'draft',
     }
 
-    // Se o banco já tem multi-tenant, salva tenantId.
-    if (member.id !== 'legacy') {
-      payload.tenantId = tenantId
-    }
+    payload.tenantId = tenantId
 
     const { data: event, error } = await supabase
       .from('Event')

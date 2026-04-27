@@ -16,7 +16,11 @@ export const loginSchema = z.object({
   password: z.string().min(1, 'Senha é obrigatória'),
 })
 
-export const adminLoginSchema = loginSchema
+export const adminLoginSchema = z.object({
+  email: z.string().email('Email inválido'),
+  password: z.string().min(1, 'Senha é obrigatória'),
+  accessCode: z.string().min(1, 'Código de acesso é obrigatório'),
+})
 
 // ==================== PERFIL ====================
 const emptyToUndefined = (v: unknown) => {
@@ -78,7 +82,7 @@ export const createEventSchema = z.object({
 
 export const inscriptionTypeSchema = z.object({
   name: z.string().min(1, 'Nome é obrigatório'),
-  value: z.coerce.number().positive('Valor deve ser positivo'),
+  value: z.coerce.number().nonnegative('Valor deve ser zero ou positivo'),
   available: z.coerce.number().int().nonnegative('Disponibilidade deve ser não-negativa'),
 })
 

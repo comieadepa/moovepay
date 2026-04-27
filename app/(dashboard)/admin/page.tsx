@@ -9,14 +9,12 @@ export default function AdminHomePage() {
   const [role, setRole] = useState<string>('user')
 
   useEffect(() => {
-    try {
-      const raw = localStorage.getItem('user')
-      if (!raw) return
-      const user = JSON.parse(raw)
-      setRole(String(user?.role || 'user'))
-    } catch {
-      setRole('user')
-    }
+    fetch('/api/auth/me', { cache: 'no-store', credentials: 'same-origin' })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        setRole(String(data?.user?.role || 'user'))
+      })
+      .catch(() => setRole('user'))
   }, [])
 
   const canSupport = role === 'admin' || role === 'support'
@@ -88,11 +86,6 @@ export default function AdminHomePage() {
         )}
       </div>
 
-      <Card className="border-amber-200 bg-amber-50">
-        <CardContent className="pt-6 text-amber-800">
-          Acesso restrito: apenas perfis com roles globais (admin, support ou finance).
-        </CardContent>
-      </Card>
     </div>
   )
 }

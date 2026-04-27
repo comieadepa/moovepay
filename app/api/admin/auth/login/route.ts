@@ -22,6 +22,11 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Email ou senha inválidos' }, { status: 401 })
     }
 
+    const adminAccessCode = process.env.ADMIN_ACCESS_CODE
+    if (!adminAccessCode || validatedData.accessCode !== adminAccessCode) {
+      return NextResponse.json({ error: 'Código de acesso inválido' }, { status: 403 })
+    }
+
     const role = String((user as any).role || 'user')
     if (!STAFF_ROLES.has(role)) {
       return NextResponse.json({ error: 'Acesso restrito à equipe administrativa' }, { status: 403 })

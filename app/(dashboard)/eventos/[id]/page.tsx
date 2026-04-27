@@ -20,7 +20,7 @@ import {
   FormMessage,
 } from '@/components/ui/form'
 import { compressAndUploadImage } from '@/lib/media-client'
-import { Upload } from 'lucide-react'
+import { Upload, Users } from 'lucide-react'
 import { canvasToFile, drawImageToCanvas, loadImageFromFile } from '@/lib/image-editor-client'
 
 type EventResponse = {
@@ -354,9 +354,18 @@ export default function EventDetailPage({ params }: { params: { id: string } }) 
                 : 'Edite os dados do seu evento'}
             </p>
           </div>
-          <Button variant="outline" onClick={() => router.push('/eventos')}>
-            Voltar
-          </Button>
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              onClick={() => router.push(`/eventos/${params.id}/inscritos`)}
+            >
+              <Users className="h-4 w-4 mr-1" />
+              Inscritos
+            </Button>
+            <Button variant="outline" onClick={() => router.push('/eventos')}>
+              Voltar
+            </Button>
+          </div>
         </div>
         <Link href="/">
           <Button variant="ghost" size="sm" className="text-blue-600 hover:text-blue-700">

@@ -8,7 +8,7 @@ type JwtPayload = {
   exp?: number
 }
 
-const JWT_SECRET = process.env.JWT_SECRET || 'seu-secret-jwt'
+const JWT_SECRET = process.env.JWT_SECRET ?? ''
 const STAFF_ROLES = new Set(['admin', 'support', 'finance'])
 
 function base64UrlToUint8Array(input: string) {
