@@ -1,4 +1,4 @@
-# MoovePay — Planejamento (Roadmap + Status)
+# CongregaPay — Planejamento (Roadmap + Status)
 
 Atualizado em: **05/02/2026**
 

@@ -120,7 +120,7 @@ export default function SignUpClient() {
             </div>
           )}
 
-          <div className="space-y-4">
+          <div className="space-y-4 mt-4">
             <a
               href="/api/auth/google"
               className="w-full inline-flex items-center justify-center gap-3 h-11 rounded-md border border-slate-200 bg-white px-4 text-sm font-medium text-slate-900 shadow-sm hover:bg-slate-50 transition"

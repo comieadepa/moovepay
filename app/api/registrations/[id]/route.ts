@@ -7,6 +7,8 @@ const updateRegistrationSchema = z.object({
   fullName: z.string().min(3, 'Nome deve ter pelo menos 3 caracteres').optional(),
   email: z.string().email('Email inválido').optional(),
   whatsapp: z.string().optional(),
+  cpf: z.string().optional(),
+  customData: z.record(z.any()).optional(),
   // Apenas transições controladas de status são permitidas
   status: z.enum(['paid', 'cancelled']).optional(),
 })
@@ -58,6 +60,8 @@ export async function PATCH(
   if (validated.fullName !== undefined) updatePayload.fullName = validated.fullName
   if (validated.email !== undefined) updatePayload.email = validated.email
   if (validated.whatsapp !== undefined) updatePayload.whatsapp = validated.whatsapp
+  if (validated.cpf !== undefined) updatePayload.cpf = validated.cpf
+  if (validated.customData !== undefined) updatePayload.customData = validated.customData
   if (validated.status !== undefined) updatePayload.status = validated.status
 
   if (Object.keys(updatePayload).length === 0) {

@@ -13,7 +13,6 @@ import {
   Pencil,
   Trash2,
   Plus,
-  ChevronRight,
 } from 'lucide-react'
 
 interface Event {

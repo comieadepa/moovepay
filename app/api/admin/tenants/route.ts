@@ -33,10 +33,68 @@ export async function GET(request: NextRequest) {
       throw error
     }
 
-    return NextResponse.json({ success: true, tenants: tenants || [] }, { status: 200 })
+    // Busca emails dos owners via TenantMember → User
+    const tenantIds = (tenants || []).map((t: any) => t.id)
+    let ownerEmailMap: Record<string, string> = {}
+    if (tenantIds.length > 0) {
+      const { data: members } = await supabase
+        .from('TenantMember')
+        .select('tenantId, User:userId(email)')
+        .in('tenantId', tenantIds)
+        .eq('role', 'owner')
+      if (members) {
+        for (const m of members as any[]) {
+          if (m.tenantId && m.User?.email) {
+            ownerEmailMap[m.tenantId] = m.User.email
+          }
+        }
+      }
+    }
+
+    const enriched = (tenants || []).map((t: any) => ({
+      ...t,
+      ownerEmail: ownerEmailMap[t.id] ?? null,
+    }))
+
+    return NextResponse.json({ success: true, tenants: enriched }, { status: 200 })
   } catch (e) {
     console.error('Erro ao listar tenants:', e)
     return NextResponse.json({ error: 'Erro ao listar tenants' }, { status: 500 })
+  }
+}
+
+export async function DELETE(request: NextRequest) {
+  try {
+    const ctx = getAuthContext(request)
+    if (!ctx) return NextResponse.json({ error: 'Não autenticado' }, { status: 401 })
+    if (!hasGlobalRole(ctx, ['admin'])) {
+      return NextResponse.json({ error: 'Não autorizado' }, { status: 403 })
+    }
+
+    const { searchParams } = new URL(request.url)
+    const tenantId = searchParams.get('tenantId')
+
+    if (!tenantId) {
+      return NextResponse.json({ error: 'tenantId é obrigatório' }, { status: 400 })
+    }
+
+    // Conta eventos do tenant antes de deletar
+    const { count: eventCount } = await supabase
+      .from('Event')
+      .select('id', { count: 'exact', head: true })
+      .eq('tenantId', tenantId)
+
+    // Deleta eventos do tenant (e cascata de InscriptionType, Registration, Payment se configurado)
+    await supabase.from('Event').delete().eq('tenantId', tenantId)
+
+    // Deleta o tenant
+    const { error } = await supabase.from('Tenant').delete().eq('id', tenantId)
+    if (error) throw error
+
+    return NextResponse.json({ success: true, deletedEvents: eventCount ?? 0 })
+  } catch (e) {
+    console.error('Erro ao deletar tenant:', e)
+    return NextResponse.json({ error: 'Erro ao deletar tenant' }, { status: 500 })
   }
 }
 

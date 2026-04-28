@@ -13,7 +13,7 @@ export default function PrivacidadePage() {
           <Link href="/" className="flex items-center gap-2">
             <Image 
               src="/logo.png" 
-              alt="MoovePay Logo" 
+              alt="CongregaPay Logo" 
               width={180} 
               height={60}
               className="h-14 w-auto"
@@ -42,7 +42,7 @@ export default function PrivacidadePage() {
         <div className="max-w-4xl mx-auto prose prose-lg max-w-none">
           <h2>1. Introdução</h2>
           <p>
-            A MoovePay ("nós", "nosso" ou "Companhia") está comprometida em proteger sua privacidade. Esta Política de Privacidade explica como coletamos, usamos, compartilhamos e protegemos suas informações pessoais de acordo com a Lei Geral de Proteção de Dados (LGPD).
+            A CongregaPay ("nós", "nosso" ou "Companhia") está comprometida em proteger sua privacidade. Esta Política de Privacidade explica como coletamos, usamos, compartilhamos e protegemos suas informações pessoais de acordo com a Lei Geral de Proteção de Dados (LGPD).
           </p>
 
           <h2>2. Informações que Coletamos</h2>
@@ -110,7 +110,7 @@ export default function PrivacidadePage() {
 
           <h2>10. Contato</h2>
           <p>
-            Se tiver dúvidas sobre esta Política de Privacidade, entre em contato conosco em <Link href="/contato" className="text-blue-600 hover:underline">suporte@moovepay.com</Link>.
+            Se tiver dúvidas sobre esta Política de Privacidade, entre em contato conosco em <Link href="/contato" className="text-blue-600 hover:underline">suporte@congregapay.com</Link>.
           </p>
 
           <p className="text-sm text-gray-600 mt-8">
@@ -122,7 +122,7 @@ export default function PrivacidadePage() {
       {/* Footer */}
       <footer className="bg-gray-900 text-gray-400 py-12 px-4 sm:px-6 lg:px-8">
         <div className="max-w-4xl mx-auto text-center">
-          <p>&copy; 2026 MoovePay. Todos os direitos reservados.</p>
+          <p>&copy; 2026 CongregaPay. Todos os direitos reservados.</p>
         </div>
       </footer>
     </main>

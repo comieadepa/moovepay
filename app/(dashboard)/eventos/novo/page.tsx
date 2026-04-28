@@ -555,17 +555,45 @@ export default function CreateEventPage() {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm font-semibold text-slate-900">Formulário de inscrição</p>
-                    <p className="text-xs text-slate-600">Defina campos extras que aparecerão na página pública de inscrição.</p>
+                    <p className="text-xs text-slate-600">Campos coletados na página pública de inscrição.</p>
                   </div>
                   <Button type="button" variant="outline" onClick={addCustomField}>
                     + Adicionar campo
                   </Button>
                 </div>
 
-                {customFields.length === 0 ? (
-                  <div className="mt-3 text-sm text-slate-500">Sem campos extras por enquanto.</div>
-                ) : (
-                  <div className="mt-4 space-y-3">
+                {/* Campos padrão — sempre coletados, não editáveis */}
+                <div className="mt-3 space-y-2">
+                  <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">Campos padrão (sempre incluídos)</p>
+                  {[
+                    { label: 'Nome completo', type: 'Texto', required: true },
+                    { label: 'E-mail', type: 'Texto', required: true },
+                    { label: 'CPF', type: 'Texto', required: true },
+                    { label: 'WhatsApp', type: 'Texto', required: false },
+                  ].map((f) => (
+                    <div key={f.label} className="flex items-center justify-between rounded-lg border border-slate-200 bg-slate-50 px-4 py-2.5">
+                      <div className="flex items-center gap-3">
+                        <div className="w-2 h-2 rounded-full bg-slate-400 shrink-0" />
+                        <span className="text-sm font-medium text-slate-700">{f.label}</span>
+                        <span className="text-xs text-slate-400">{f.type}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        {f.required && (
+                          <span className="text-xs bg-blue-50 text-blue-600 border border-blue-200 rounded px-1.5 py-0.5">Obrigatório</span>
+                        )}
+                        <span className="text-xs bg-slate-100 text-slate-500 rounded px-1.5 py-0.5">Fixo</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Campos extras configuráveis */}
+                <div className="mt-4">
+                  <p className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-2">Campos extras (opcionais)</p>
+                  {customFields.length === 0 ? (
+                    <div className="text-sm text-slate-400 italic">Nenhum campo extra adicionado.</div>
+                  ) : (
+                  <div className="space-y-3">
                     {customFields.map((f, idx) => (
                       <div key={`${f.key}-${idx}`} className="rounded-md border p-4 bg-slate-50">
                         <div className="grid gap-3 md:grid-cols-2">
@@ -657,7 +685,8 @@ export default function CreateEventPage() {
                       </div>
                     ))}
                   </div>
-                )}
+                  )}
+                </div>
               </div>
 
               <div className="flex gap-4">

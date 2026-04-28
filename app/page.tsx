@@ -157,7 +157,7 @@ export default function Home() {
         target="_blank"
         rel="noopener noreferrer"
         className="fixed bottom-6 right-6 z-50 bg-green-500 hover:bg-green-600 text-white px-5 py-4 rounded-full shadow-xl font-semibold transition-all"
-        aria-label="Falar com a MoovePay no WhatsApp"
+        aria-label="Falar com a CongregaPay no WhatsApp"
       >
         WhatsApp
       </a>
@@ -167,7 +167,7 @@ export default function Home() {
           <div className="flex items-center gap-2">
             <Image
               src="/logo.png"
-              alt="MoovePay Logo"
+              alt="CongregaPay Logo"
               width={180}
               height={60}
               className="h-14 w-auto"
@@ -277,7 +277,7 @@ export default function Home() {
                     <div className="bg-gradient-to-r from-blue-600 to-indigo-600 p-6 text-white">
                       <div className="flex justify-between items-start gap-4">
                         <div>
-                          <p className="text-sm opacity-90">MoovePay Dashboard</p>
+                          <p className="text-sm opacity-90">CongregaPay Dashboard</p>
                           <h3 className="text-2xl font-bold mt-1">{slide.eventName}</h3>
                         </div>
                         <span className="bg-white/20 text-xs px-3 py-1 rounded-full">{slide.eventType}</span>
@@ -358,27 +358,66 @@ export default function Home() {
 
       <OpenEventsSection />
 
-      <section className="py-20 px-4 sm:px-6 lg:px-8 bg-gray-50">
-        <div className="max-w-6xl mx-auto text-center">
-          <h2 className="text-4xl font-bold text-gray-900 mb-4">
-            Sua igreja ainda organiza eventos assim?
-          </h2>
-          <p className="text-xl text-gray-600 mb-12 max-w-3xl mx-auto">
-            Eventos da igreja exigem cuidado, organização e transparência. A MoovePay ajuda sua equipe a sair do improviso.
-          </p>
+      <section className="relative py-24 px-4 sm:px-6 lg:px-8 overflow-hidden bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
+        {/* Decoração de fundo */}
+        <div className="absolute inset-0 pointer-events-none">
+          <div className="absolute -top-32 -left-32 w-96 h-96 bg-red-600/10 rounded-full blur-3xl" />
+          <div className="absolute -bottom-32 -right-32 w-96 h-96 bg-blue-600/10 rounded-full blur-3xl" />
+        </div>
 
-          <div className="grid md:grid-cols-3 gap-6">
+        <div className="relative max-w-5xl mx-auto">
+          {/* Header */}
+          <div className="text-center mb-14">
+            <span className="inline-block mb-4 px-4 py-1.5 rounded-full bg-red-500/15 border border-red-500/30 text-red-400 text-xs font-semibold uppercase tracking-widest">
+              Ainda assim?
+            </span>
+            <h2 className="text-4xl sm:text-5xl font-extrabold text-white mb-5 leading-tight">
+              Sua igreja ainda organiza<br className="hidden sm:block" /> eventos assim?
+            </h2>
+            <p className="text-slate-400 text-lg max-w-2xl mx-auto">
+              Eventos da igreja exigem cuidado, organização e transparência.<br className="hidden sm:block" />
+              A CongregaPay ajuda sua equipe a sair do improviso.
+            </p>
+          </div>
+
+          {/* Grid de dores */}
+          <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-4 mb-14">
             {dores.map((dor) => (
-              <div key={dor} className="bg-white p-6 rounded-2xl shadow-sm border text-left">
-                <div className="text-red-500 text-2xl mb-3">✕</div>
-                <p className="font-semibold text-gray-800">{dor}</p>
+              <div
+                key={dor}
+                className="group flex items-start gap-4 bg-white/5 hover:bg-white/10 border border-white/10 hover:border-red-500/40 rounded-2xl px-5 py-5 transition-all duration-200"
+              >
+                <div className="mt-0.5 shrink-0 w-8 h-8 rounded-lg bg-red-500/15 border border-red-500/30 flex items-center justify-center">
+                  <svg className="w-4 h-4 text-red-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+                    <path d="M18 6L6 18M6 6l12 12" />
+                  </svg>
+                </div>
+                <p className="text-slate-200 text-sm font-medium leading-snug">{dor}</p>
               </div>
             ))}
           </div>
 
-          <p className="mt-10 text-lg font-semibold text-blue-600">
-            A MoovePay centraliza inscrições, pagamentos, check-in e certificados em uma única plataforma.
-          </p>
+          {/* CTA inferior */}
+          <div className="flex flex-col items-center gap-4 text-center">
+            <div className="h-px w-24 bg-gradient-to-r from-transparent via-slate-500 to-transparent" />
+            <p className="text-lg font-semibold text-white max-w-2xl">
+              A CongregaPay centraliza{' '}
+              <span className="text-blue-400">inscrições</span>,{' '}
+              <span className="text-emerald-400">pagamentos</span>,{' '}
+              <span className="text-amber-400">check-in</span> e{' '}
+              <span className="text-violet-400">certificados</span>{' '}
+              em uma única plataforma.
+            </p>
+            <Link
+              href="/signup"
+              className="mt-2 inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white font-semibold px-7 py-3.5 rounded-xl shadow-lg shadow-blue-900/40 transition-all duration-200 text-sm"
+            >
+              Criar evento grátis
+              <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M5 12h14M12 5l7 7-7 7" />
+              </svg>
+            </Link>
+          </div>
         </div>
       </section>
 
@@ -388,7 +427,7 @@ export default function Home() {
             Tudo que sua igreja precisa para organizar eventos com excelência
           </h2>
           <p className="text-xl text-gray-600 mb-16 max-w-3xl mx-auto">
-            Do cadastro do evento ao controle financeiro, a MoovePay simplifica a operação para pastores, líderes e equipes voluntárias.
+            Do cadastro do evento ao controle financeiro, a CongregaPay simplifica a operação para pastores, líderes e equipes voluntárias.
           </p>
 
           <div className="grid md:grid-cols-3 gap-10">
@@ -628,7 +667,7 @@ export default function Home() {
           <div className="grid md:grid-cols-4 gap-12 mb-12">
             <div>
               <div className="flex items-center gap-2 mb-4">
-                <Image src="/logo_cont.png" alt="MoovePay Logo" width={200} height={65} className="h-16 w-auto" />
+                <Image src="/logo_cont.png" alt="CongregaPay Logo" width={200} height={65} className="h-16 w-auto" />
               </div>
               <p className="text-sm leading-relaxed">
                 Sistema completo para gestão de eventos de igrejas, ministérios, cursos, retiros e conferências cristãs.
@@ -674,7 +713,7 @@ export default function Home() {
           </div>
 
           <div className="border-t border-gray-800 pt-8 text-center text-sm">
-            <p>&copy; 2026 MoovePay. Todos os direitos reservados.</p>
+            <p>&copy; 2026 CongregaPay. Todos os direitos reservados.</p>
             <div className="mt-4 space-x-4">
               <Link href="/privacidade" className="hover:text-white transition">Política de Privacidade</Link>
               <span>•</span>

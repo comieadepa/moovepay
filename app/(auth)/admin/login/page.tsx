@@ -88,7 +88,7 @@ export default function AdminLoginPage() {
                   <FormItem>
                     <FormLabel>Email</FormLabel>
                     <FormControl>
-                      <Input type="email" placeholder="equipe@moovepay.com" {...field} />
+                      <Input type="email" placeholder="equipe@congregapay.com" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>

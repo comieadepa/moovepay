@@ -1,4 +1,4 @@
--- Migration: init schema for MoovePay
+-- Migration: init schema for CongregaPay
 -- Generated from ../supabase-schema.sql
 
 -- ==================== EXTENSÕES ====================

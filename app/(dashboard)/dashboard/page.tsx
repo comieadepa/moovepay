@@ -3,8 +3,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import {
   ArrowUpRight,
   Calendar,
@@ -18,7 +16,7 @@ import {
   Zap,
   ChevronRight,
 } from 'lucide-react'
-import { PLAN_COLORS, PLANS, type PlanId } from '@/lib/plans'
+import { PLANS, type PlanId } from '@/lib/plans'
 import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 
@@ -35,6 +33,7 @@ type EventLite = {
   createdAt?: string | null
   registrations?: { id: string }[]
   payments?: PaymentLite[]
+  inscriptionTypes?: { value: number }[]
 }
 
 type DashboardStats = {
@@ -61,6 +60,8 @@ export default function DashboardPage() {
   const [withdrawAmount, setWithdrawAmount] = useState('')
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [hasPaidEvents, setHasPaidEvents] = useState(false)
+
   const [stats, setStats] = useState<DashboardStats>({
     totalEvents: 0,
     totalRegistrations: 0,
@@ -148,10 +149,21 @@ export default function DashboardPage() {
 
         const data = await response.json()
         if (!response.ok) {
+          // 403 de tenant ainda não configurado — trata como lista vazia, sem exibir erro
+          if (response.status === 403) {
+            if (isMounted) setIsLoading(false)
+            return
+          }
           throw new Error(data?.error || 'Erro ao carregar dashboard')
         }
 
         const events = (data?.events || []) as EventLite[]
+
+        // Verifica se existe ao menos 1 evento pago (não gratuito)
+        const paidExists = events.some((e) =>
+          (e.inscriptionTypes || []).some((t) => t.value > 0)
+        )
+        if (isMounted) setHasPaidEvents(paidExists)
 
         const totalEvents = events.length
         const totalRegistrations = events.reduce(
@@ -282,6 +294,7 @@ export default function DashboardPage() {
             iconBg: 'bg-emerald-100',
             iconColor: 'text-emerald-600',
             valueColor: 'text-emerald-700',
+            locked: !hasPaidEvents,
           },
           {
             label: 'Saldo Disponível',
@@ -290,9 +303,20 @@ export default function DashboardPage() {
             iconBg: 'bg-amber-100',
             iconColor: 'text-amber-600',
             valueColor: 'text-amber-700',
+            locked: !hasPaidEvents,
           },
         ].map((kpi) => (
-          <div key={kpi.label} className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 flex flex-col gap-3 hover:shadow-md transition-shadow">
+          <div key={kpi.label} className={`relative bg-white rounded-2xl border shadow-sm p-5 flex flex-col gap-3 transition-shadow ${
+            kpi.locked ? 'border-slate-200 opacity-60 select-none' : 'border-slate-100 hover:shadow-md'
+          }`}>
+            {kpi.locked && (
+              <div className="absolute inset-0 rounded-2xl flex flex-col items-center justify-center bg-white/80 backdrop-blur-[2px] z-10">
+                <svg className="w-5 h-5 text-slate-400 mb-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                </svg>
+                <p className="text-xs text-slate-400 font-medium text-center px-3">Disponível após criar um evento pago</p>
+              </div>
+            )}
             <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${kpi.iconBg}`}>
               <kpi.icon className={`w-5 h-5 ${kpi.iconColor}`} />
             </div>
@@ -428,7 +452,17 @@ export default function DashboardPage() {
           </div>
 
           {/* Financeiro */}
-          <div className="bg-gradient-to-br from-emerald-50 to-teal-50 rounded-2xl border border-emerald-100 shadow-sm p-5">
+          <div className={`relative bg-gradient-to-br from-emerald-50 to-teal-50 rounded-2xl border shadow-sm p-5 ${
+            !hasPaidEvents ? 'border-slate-200 opacity-60 select-none' : 'border-emerald-100'
+          }`}>
+            {!hasPaidEvents && (
+              <div className="absolute inset-0 rounded-2xl flex flex-col items-center justify-center bg-white/80 backdrop-blur-[2px] z-10">
+                <svg className="w-5 h-5 text-slate-400 mb-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                </svg>
+                <p className="text-xs text-slate-400 font-medium text-center px-4">Disponível após criar um evento pago</p>
+              </div>
+            )}
             <div className="flex items-center gap-2 mb-3">
               <div className="w-8 h-8 rounded-lg bg-emerald-500 flex items-center justify-center">
                 <DollarSign className="w-4 h-4 text-white" />

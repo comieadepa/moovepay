@@ -58,7 +58,6 @@ export default function LoginClient() {
     if (!oauthError) return
 
     const messageByCode: Record<string, string> = {
-      google_not_configured: 'Login com Google não está configurado. Fale com o suporte.',
       google_state: 'Sessão do Google expirada/ inválida. Tente novamente.',
       google_oauth: 'Falha ao autenticar com Google. Tente novamente em instantes.',
     }
@@ -132,21 +131,21 @@ export default function LoginClient() {
             </div>
           )}
 
-          <div className="space-y-4">
-            <a
-              href="/api/auth/google"
-              className="w-full inline-flex items-center justify-center gap-3 h-11 rounded-md border border-slate-200 bg-white px-4 text-sm font-medium text-slate-900 shadow-sm hover:bg-slate-50 transition"
-            >
-              <GoogleIcon />
-              Login com o Google
-            </a>
+          <div className="space-y-4 mb-4 pt-2.5">
+              <a
+                href="/api/auth/google"
+                className="w-full inline-flex items-center justify-center gap-3 h-11 rounded-md border border-slate-200 bg-white px-4 text-sm font-medium text-slate-900 shadow-sm hover:bg-slate-50 transition"
+              >
+                <GoogleIcon />
+                Login com o Google
+              </a>
 
-            <div className="flex items-center gap-3">
-              <div className="h-px flex-1 bg-slate-200" />
-              <span className="text-xs text-slate-500">OU</span>
-              <div className="h-px flex-1 bg-slate-200" />
+              <div className="flex items-center gap-3">
+                <div className="h-px flex-1 bg-slate-200" />
+                <span className="text-xs text-slate-500">OU</span>
+                <div className="h-px flex-1 bg-slate-200" />
+              </div>
             </div>
-          </div>
 
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">

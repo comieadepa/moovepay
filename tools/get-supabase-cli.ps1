@@ -5,7 +5,7 @@ param(
 $ErrorActionPreference = 'Stop'
 
 function Get-ReleaseJson([string]$version) {
-  $headers = @{ 'User-Agent' = 'moovepay-tools' }
+  $headers = @{ 'User-Agent' = 'congregapay-tools' }
 
   if ($version -eq 'latest' -or [string]::IsNullOrWhiteSpace($version)) {
     return Invoke-RestMethod -Headers $headers -Uri 'https://api.github.com/repos/supabase/cli/releases/latest'
@@ -45,7 +45,7 @@ New-Item -ItemType Directory -Force -Path $destDir | Out-Null
 $release = Get-ReleaseJson -version $Version
 $url = Get-AssetUrl -releaseJson $release
 
-$tmpRoot = Join-Path ([System.IO.Path]::GetTempPath()) ("moovepay-supabase-cli-" + [guid]::NewGuid().ToString('n'))
+$tmpRoot = Join-Path ([System.IO.Path]::GetTempPath()) ("congregapay-supabase-cli-" + [guid]::NewGuid().ToString('n'))
 $tmpArchive = Join-Path $tmpRoot 'supabase-cli-archive'
 $tmpExtract = Join-Path $tmpRoot 'extract'
 

@@ -52,6 +52,7 @@ export default function EventDetailPage({ params }: { params: { id: string } }) 
   const [error, setError] = useState<string | null>(null)
   const [eventMeta, setEventMeta] = useState<{ slug?: string | null; status?: string } | null>(null)
   const [publishing, setPublishing] = useState(false)
+  const [linkCopied, setLinkCopied] = useState(false)
   const [isFree, setIsFree] = useState(true)
   const [registrationValue, setRegistrationValue] = useState('0,00')
   const [uploadingBanner, setUploadingBanner] = useState(false)
@@ -393,14 +394,23 @@ export default function EventDetailPage({ params }: { params: { id: string } }) 
                   </div>
                   <div className="text-sm text-slate-800 break-all">{publicLink || 'Carregando link...'}</div>
                 </div>
-                <div className="flex flex-col gap-2">
+                <div className="flex flex-col items-end gap-1">
                   <Button
                     variant="outline"
-                    onClick={() => publicLink && navigator.clipboard.writeText(publicLink)}
+                    onClick={() => {
+                      if (!publicLink) return
+                      navigator.clipboard.writeText(publicLink)
+                      setLinkCopied(true)
+                      setTimeout(() => setLinkCopied(false), 2000)
+                    }}
                     disabled={!publicLink}
+                    className={`transition-all duration-200 ${linkCopied ? 'border-emerald-500 text-emerald-600 scale-95' : ''}`}
                   >
-                    Copiar link
+                    {linkCopied ? '✓ Copiado!' : 'Copiar link'}
                   </Button>
+                  {linkCopied && (
+                    <span className="text-xs text-emerald-600 font-medium animate-pulse">Link copiado!</span>
+                  )}
                   {eventMeta?.status !== 'published' && (
                     <Button onClick={handlePublish} disabled={publishing}>
                       {publishing ? 'Publicando...' : 'Publicar evento'}

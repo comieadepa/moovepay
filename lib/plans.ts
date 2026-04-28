@@ -1,4 +1,4 @@
-// Definições centrais dos planos MoovePay.
+// Definições centrais dos planos CongregaPay.
 // Usada tanto no front-end (badge/display) quanto no back-end (guards de feature).
 
 export type PlanId = 'free' | 'essencial' | 'pro' | 'custom'

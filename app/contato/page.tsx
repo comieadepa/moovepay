@@ -67,7 +67,7 @@ export default function ContatoPage() {
           <Link href="/" className="flex items-center gap-2">
             <Image 
               src="/logo.png" 
-              alt="MoovePay Logo" 
+              alt="CongregaPay Logo" 
               width={180} 
               height={60}
               className="h-14 w-auto"
@@ -194,7 +194,7 @@ export default function ContatoPage() {
                 <Card>
                   <CardContent className="pt-6">
                     <h4 className="font-semibold text-gray-900 mb-2">Email</h4>
-                    <p className="text-gray-600">suporte@moovepay.com</p>
+                    <p className="text-gray-600">suporte@congregapay.com</p>
                   </CardContent>
                 </Card>
 
@@ -241,7 +241,7 @@ export default function ContatoPage() {
       {/* Footer */}
       <footer className="bg-gray-900 text-gray-400 py-12 px-4 sm:px-6 lg:px-8">
         <div className="max-w-4xl mx-auto text-center">
-          <p>&copy; 2026 MoovePay. Todos os direitos reservados.</p>
+          <p>&copy; 2026 CongregaPay. Todos os direitos reservados.</p>
         </div>
       </footer>
     </main>

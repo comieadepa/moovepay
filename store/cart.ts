@@ -196,7 +196,7 @@ export const useCart = create<CartState>()(
       },
     }),
     {
-      name: 'moovepay-cart',
+      name: 'congregapay-cart',
       version: 1,
     }
   )

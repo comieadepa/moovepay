@@ -1,4 +1,4 @@
-# MoovePay — Estrutura do Projeto
+# CongregaPay — Estrutura do Projeto
 
 Atualizado em: **05/02/2026**
 
@@ -9,7 +9,7 @@ Este documento descreve a **estrutura real** do repositório (não um “sonho i
 ## 📂 Estrutura (snapshot do repositório)
 
 ```
-moovepay/
+congregapay/
 ├── app/                       # Next.js App Router
 │   ├── (auth)/                # Login/Signup + completar cadastro + admin login
 │   ├── (dashboard)/           # Área autenticada (criador + staff)

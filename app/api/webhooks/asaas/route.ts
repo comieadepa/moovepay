@@ -80,7 +80,7 @@ export async function POST(request: NextRequest) {
         .eq('id', reg.id)
 
       // Gerar QR Code
-      const qrPayload = `moovepay:voucher:${reg.id}`
+      const qrPayload = `congregapay:voucher:${reg.id}`
       const qrCode = await QRCode.toDataURL(qrPayload, { errorCorrectionLevel: 'H' })
 
       // Criar/atualizar Voucher (upsert para idempotência)

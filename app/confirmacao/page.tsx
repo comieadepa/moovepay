@@ -14,6 +14,7 @@ function ConfirmacaoPageContent() {
   const [pixCopyPaste, setPixCopyPaste] = useState<string | null>(null)
   const [boletoUrl, setBoletoUrl] = useState<string | null>(null)
   const [copied, setCopied] = useState(false)
+  const [code, setCode] = useState<string | null>(null)
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search)
@@ -22,6 +23,8 @@ function ConfirmacaoPageContent() {
     setMethod(params.get('method'))
     setPixCopyPaste(params.get('pixCopyPaste'))
     setBoletoUrl(params.get('boletoUrl'))
+    const rawCode = params.get('code')
+    setCode(rawCode ? `#${rawCode}` : `#${Math.random().toString(36).substring(2, 10).toUpperCase()}`)
   }, [])
 
   const money = (value: number) => {
@@ -45,9 +48,17 @@ function ConfirmacaoPageContent() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 py-12">
+    <>
+      <style>{`
+        @media print {
+          body * { visibility: hidden; }
+          #confirmacao-card, #confirmacao-card * { visibility: visible; }
+          #confirmacao-card { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); width: 600px; box-shadow: none !important; }
+        }
+      `}</style>
+      <div className="min-h-screen bg-slate-50 py-12">
       <div className="max-w-2xl mx-auto px-4">
-        <Card className="border-emerald-200 bg-emerald-50">
+        <Card id="confirmacao-card" className="border-emerald-200 bg-emerald-50">
           <CardContent className="pt-12 text-center pb-12">
             {/* Success Icon */}
             <div className="mb-6 flex justify-center">
@@ -70,9 +81,17 @@ function ConfirmacaoPageContent() {
 
             <h1 className="text-3xl font-bold text-slate-900 mb-3">Inscrição confirmada</h1>
 
-            <p className="text-slate-700 text-lg mb-6">
-              {registrations} inscrição{parseInt(registrations) !== 1 ? 's' : ''} foi{parseInt(registrations) !== 1 ? 'ram' : ''} confirmada{parseInt(registrations) !== 1 ? 's' : ''}.
+            <p className="text-slate-700 text-lg mb-2">
+              {parseInt(registrations) === 1
+                ? '1 inscrição foi confirmada.'
+                : `${registrations} inscrições foram confirmadas.`}
             </p>
+
+            {code && (
+              <p className="text-sm font-mono text-emerald-700 bg-emerald-100 border border-emerald-300 rounded-md px-4 py-2 inline-block mb-6">
+                Seu código de inscrição é: <span className="font-bold">{code}</span>
+              </p>
+            )}
 
             {(total || method) && (
               <Card className="mb-6 bg-white">
@@ -164,16 +183,18 @@ function ConfirmacaoPageContent() {
                         <span className="font-bold text-emerald-700">1.</span>
                         <span>Você receberá um email com os detalhes da sua inscrição</span>
                       </li>
+                      {method !== 'free' && (
+                        <li className="flex gap-3">
+                          <span className="font-bold text-emerald-700">2.</span>
+                          <span>Seu comprovante de pagamento será enviado por email</span>
+                        </li>
+                      )}
                       <li className="flex gap-3">
-                        <span className="font-bold text-emerald-700">2.</span>
-                        <span>Seu comprovante de pagamento será enviado por email</span>
-                      </li>
-                      <li className="flex gap-3">
-                        <span className="font-bold text-emerald-700">3.</span>
+                        <span className="font-bold text-emerald-700">{method !== 'free' ? '3' : '2'}.</span>
                         <span>Você receberá um voucher/QR code para check-in no evento</span>
                       </li>
                       <li className="flex gap-3">
-                        <span className="font-bold text-emerald-700">4.</span>
+                        <span className="font-bold text-emerald-700">{method !== 'free' ? '4' : '3'}.</span>
                         <span>Compareça no local, na data e hora especificados</span>
                       </li>
                     </ul>
@@ -202,19 +223,20 @@ function ConfirmacaoPageContent() {
               <Button
                 variant="outline"
                 onClick={() => window.print()}
-                className="w-full"
+                className="w-full no-print"
               >
                 Imprimir Confirmação
               </Button>
             </div>
 
-            <p className="text-sm text-slate-600 mt-6">
-              Obrigado por escolher a MoovePay para suas inscrições!
+            <p className="text-sm text-slate-600 mt-6 no-print">
+              Obrigado por escolher a CongregaPay para suas inscrições!
             </p>
           </CardContent>
         </Card>
       </div>
     </div>
+    </>
   )
 }
 

@@ -107,6 +107,7 @@ export default function InscricaoEventoPage() {
 
   const quantity = form.watch('quantity')
   const inscriptionTypeId = form.watch('inscriptionTypeId')
+  const watchedParticipants = form.watch('participants')
   const selectedType = useMemo(() => event?.inscriptionTypes?.find((t) => t.id === inscriptionTypeId), [event, inscriptionTypeId])
   const totalValue = useMemo(() => Number(selectedType?.value || 0) * Number(quantity || 1), [selectedType?.value, quantity])
 
@@ -215,10 +216,15 @@ export default function InscricaoEventoPage() {
 
     if (success.totalValue === 0) {
       // Gratuito: vai direto para confirmação
+      const firstId = success.registrationIds[0]
+      const orderCode = firstId
+        ? firstId.replace(/-/g, '').substring(0, 8).toUpperCase()
+        : Math.random().toString(36).substring(2, 10).toUpperCase()
       const qs = new URLSearchParams({
         registrations: String(success.registrationIds.length),
         total: '0.00',
         method: 'free',
+        code: orderCode,
       })
       router.push(`/confirmacao?${qs.toString()}`)
     } else {
@@ -525,7 +531,7 @@ export default function InscricaoEventoPage() {
                 {/* Campos personalizados do evento */}
                 {customFields.length > 0 && (() => {
                   const baseName = `participants.${idx}.customData` as any
-                  const current = (form.getValues(baseName) as any) || {}
+                  const current = (watchedParticipants?.[idx]?.customData as any) || {}
                   const setField = (key: string, value: any) =>
                     form.setValue(baseName, { ...current, [key]: value }, { shouldDirty: true })
 
@@ -658,7 +664,7 @@ export default function InscricaoEventoPage() {
             </button>
 
             <p className="text-center text-xs text-slate-400 py-4">
-              Sistema de inscrição online · MoovePay
+              Sistema de inscrição online · CongregaPay
             </p>
           </form>
         </Form>

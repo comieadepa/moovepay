@@ -7,7 +7,7 @@ import { supabase } from '@/lib/supabase-server'
 export const dynamic = 'force-dynamic'
 export const runtime = 'nodejs'
 
-const BUCKET = 'moovepay-media'
+const BUCKET = 'congregapay-media'
 const PREFIX = 'banners/no-event'
 
 function extractPathFromPublicUrl(url: string) {

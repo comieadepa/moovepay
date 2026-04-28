@@ -27,7 +27,7 @@ GOOGLE_CLIENT_SECRET=XXXXX_SECRET_DO_GOOGLE_XXXXX
 # ==================== RESEND (E-MAILS) ====================
 
 RESEND_API_KEY=re_XXXXX_CHAVE_RESEND_XXXXX
-NEXT_PUBLIC_EMAIL_FROM=noreply@moovepay.com.br
+NEXT_PUBLIC_EMAIL_FROM=noreply@congregapay.com.br
 
 # ==================== ASAAS (PAGAMENTOS) ====================
 
@@ -39,7 +39,7 @@ ASAAS_API_KEY=sk_live_XXXXX_OU_sk_test_XXXXX_DO_ASAAS
 NEXT_PUBLIC_SUPABASE_ANON_KEY=sb_publishable_XXXXX_DO_SUPABASE_XXXXX
 
 # URL pública canônica do app (recomendado p/ Google OAuth em produção)
-# Ex.: https://moovepay.com.br
+# Ex.: https://congregapay.com.br
 APP_ORIGIN=https://SEU-DOMINIO
 
 # Opcional (fallback usado em alguns pontos do app)

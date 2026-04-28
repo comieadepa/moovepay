@@ -17,6 +17,7 @@ import {
   CheckCircle,
   Edit2,
   RefreshCw,
+  ScanLine,
 } from 'lucide-react'
 
 type Registration = {
@@ -25,12 +26,13 @@ type Registration = {
   email: string
   whatsapp?: string | null
   cpf: string
+  customData?: Record<string, any> | null
   status: string
   totalValue: number
   createdAt: string
   cartId?: string | null
   inscriptionType?: { id: string; name: string; value: number } | null
-  event?: { id: string; name: string; startDate: string } | null
+  event?: { id: string; name: string; startDate: string; customFields?: any[] | null } | null
 }
 
 type StatusFilter = 'all' | 'paid' | 'pending' | 'cancelled'
@@ -59,7 +61,9 @@ export default function InscritosPage({ params }: { params: { id: string } }) {
 
   // Edit modal
   const [editReg, setEditReg] = useState<Registration | null>(null)
-  const [editForm, setEditForm] = useState({ fullName: '', email: '', whatsapp: '' })
+  const [editForm, setEditForm] = useState<{ fullName: string; email: string; whatsapp: string; cpf: string; customData: Record<string, any> }>({
+    fullName: '', email: '', whatsapp: '', cpf: '', customData: {},
+  })
   const [editSaving, setEditSaving] = useState(false)
   const [editError, setEditError] = useState<string | null>(null)
 
@@ -191,6 +195,8 @@ export default function InscritosPage({ params }: { params: { id: string } }) {
       fullName: reg.fullName,
       email: reg.email,
       whatsapp: reg.whatsapp || '',
+      cpf: reg.cpf || '',
+      customData: (reg.customData as Record<string, any>) || {},
     })
     setEditError(null)
   }
@@ -208,7 +214,11 @@ export default function InscritosPage({ params }: { params: { id: string } }) {
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || 'Erro ao salvar')
       setRegistrations((prev) =>
-        prev.map((r) => (r.id === editReg.id ? { ...r, ...editForm } : r))
+        prev.map((r) =>
+          r.id === editReg.id
+            ? { ...r, fullName: editForm.fullName, email: editForm.email, whatsapp: editForm.whatsapp, cpf: editForm.cpf, customData: editForm.customData }
+            : r
+        )
       )
       setEditReg(null)
       showSuccess('Dados atualizados com sucesso.')
@@ -337,7 +347,7 @@ export default function InscritosPage({ params }: { params: { id: string } }) {
                 {STATUS_LABELS[voucherReg.status] || voucherReg.status}
               </p>
               <div style={{ display: 'flex', justifyContent: 'center', margin: '0 0 8px 0' }}>
-                <QRCodeSVG value={`moovepay:reg:${voucherReg.id}`} size={160} />
+                <QRCodeSVG value={`congregapay:reg:${voucherReg.id}`} size={160} />
               </div>
               <p
                 style={{
@@ -367,6 +377,13 @@ export default function InscritosPage({ params }: { params: { id: string } }) {
           >
             <ArrowLeft className="h-4 w-4 mr-1" />
             Voltar ao evento
+          </Button>
+          <Button
+            onClick={() => router.push(`/eventos/${params.id}/checkin`)}
+            className="bg-emerald-600 hover:bg-emerald-700 text-white gap-2"
+          >
+            <ScanLine className="h-4 w-4" />
+            Check-in
           </Button>
           <Button
             variant="outline"
@@ -607,41 +624,135 @@ export default function InscritosPage({ params }: { params: { id: string } }) {
                   {editError}
                 </div>
               )}
-              <div>
-                <label className="text-sm font-medium text-slate-700 block mb-1">
-                  Nome completo
-                </label>
-                <Input
-                  value={editForm.fullName}
-                  onChange={(e) =>
-                    setEditForm((f) => ({ ...f, fullName: e.target.value }))
-                  }
-                />
+
+              {/* ── Campos fixos ── */}
+              <div className="grid grid-cols-2 gap-3">
+                <div className="col-span-2">
+                  <label className="text-sm font-medium text-slate-700 block mb-1">
+                    Nome completo
+                  </label>
+                  <Input
+                    value={editForm.fullName}
+                    onChange={(e) =>
+                      setEditForm((f) => ({ ...f, fullName: e.target.value }))
+                    }
+                  />
+                </div>
+                <div className="col-span-2">
+                  <label className="text-sm font-medium text-slate-700 block mb-1">
+                    Email
+                  </label>
+                  <Input
+                    type="email"
+                    value={editForm.email}
+                    onChange={(e) =>
+                      setEditForm((f) => ({ ...f, email: e.target.value }))
+                    }
+                  />
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-slate-700 block mb-1">
+                    CPF
+                  </label>
+                  <Input
+                    value={editForm.cpf}
+                    onChange={(e) =>
+                      setEditForm((f) => ({ ...f, cpf: e.target.value }))
+                    }
+                    placeholder="000.000.000-00"
+                  />
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-slate-700 block mb-1">
+                    WhatsApp
+                  </label>
+                  <Input
+                    value={editForm.whatsapp}
+                    onChange={(e) =>
+                      setEditForm((f) => ({ ...f, whatsapp: e.target.value }))
+                    }
+                    placeholder="(11) 99999-9999"
+                  />
+                </div>
               </div>
-              <div>
-                <label className="text-sm font-medium text-slate-700 block mb-1">
-                  Email
-                </label>
-                <Input
-                  type="email"
-                  value={editForm.email}
-                  onChange={(e) =>
-                    setEditForm((f) => ({ ...f, email: e.target.value }))
-                  }
-                />
-              </div>
-              <div>
-                <label className="text-sm font-medium text-slate-700 block mb-1">
-                  WhatsApp
-                </label>
-                <Input
-                  value={editForm.whatsapp}
-                  onChange={(e) =>
-                    setEditForm((f) => ({ ...f, whatsapp: e.target.value }))
-                  }
-                  placeholder="(11) 99999-9999"
-                />
-              </div>
+
+              {/* ── Campos personalizados do evento ── */}
+              {(() => {
+                const customFields: any[] = editReg?.event?.customFields || []
+                if (customFields.length === 0) return null
+                return (
+                  <div className="space-y-3 border-t pt-3">
+                    <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">
+                      Campos personalizados
+                    </p>
+                    {customFields.map((f: any) => (
+                      <div key={f.key}>
+                        <label className="text-sm font-medium text-slate-700 block mb-1">
+                          {f.label}{f.required ? ' *' : ''}
+                        </label>
+                        {f.type === 'textarea' ? (
+                          <textarea
+                            className="w-full rounded-md border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-slate-400"
+                            rows={3}
+                            placeholder={f.placeholder || ''}
+                            value={(editForm.customData[f.key] as string) ?? ''}
+                            onChange={(e) =>
+                              setEditForm((form) => ({
+                                ...form,
+                                customData: { ...form.customData, [f.key]: e.target.value },
+                              }))
+                            }
+                          />
+                        ) : f.type === 'select' ? (
+                          <select
+                            className="w-full rounded-md border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-slate-400 bg-white"
+                            value={(editForm.customData[f.key] as string) ?? ''}
+                            onChange={(e) =>
+                              setEditForm((form) => ({
+                                ...form,
+                                customData: { ...form.customData, [f.key]: e.target.value },
+                              }))
+                            }
+                          >
+                            <option value="">Selecionar...</option>
+                            {(f.options || []).map((opt: string) => (
+                              <option key={opt} value={opt}>{opt}</option>
+                            ))}
+                          </select>
+                        ) : f.type === 'checkbox' ? (
+                          <label className="flex items-center gap-2 text-sm text-slate-700 cursor-pointer">
+                            <input
+                              type="checkbox"
+                              className="w-4 h-4 accent-blue-600"
+                              checked={Boolean(editForm.customData[f.key])}
+                              onChange={(e) =>
+                                setEditForm((form) => ({
+                                  ...form,
+                                  customData: { ...form.customData, [f.key]: e.target.checked },
+                                }))
+                              }
+                            />
+                            {f.placeholder || 'Marcar'}
+                          </label>
+                        ) : (
+                          <Input
+                            type={f.type === 'number' ? 'number' : f.type === 'date' ? 'date' : 'text'}
+                            placeholder={f.placeholder || ''}
+                            value={(editForm.customData[f.key] as string) ?? ''}
+                            onChange={(e) =>
+                              setEditForm((form) => ({
+                                ...form,
+                                customData: { ...form.customData, [f.key]: e.target.value },
+                              }))
+                            }
+                          />
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )
+              })()}
+
               <div className="flex gap-3 pt-2">
                 <Button
                   onClick={handleEditSave}

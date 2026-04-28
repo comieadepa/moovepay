@@ -117,7 +117,7 @@ export default function DashboardLayout({
           <Link href={inAdminArea ? '/admin' : '/dashboard'} className="flex items-center gap-2">
             <Image
               src="/logo.png"
-              alt="MoovePay"
+              alt="CongregaPay"
               width={140}
               height={40}
               className="h-8 w-auto brightness-0 invert"
@@ -205,7 +205,7 @@ export default function DashboardLayout({
           </button>
 
           <Link href={inAdminArea ? '/admin' : '/dashboard'} className="flex items-center">
-            <Image src="/logo.png" alt="MoovePay" width={140} height={40} className="h-8 w-auto brightness-0 invert" priority />
+            <Image src="/logo.png" alt="CongregaPay" width={140} height={40} className="h-8 w-auto brightness-0 invert" priority />
           </Link>
 
           <button

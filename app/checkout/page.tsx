@@ -213,11 +213,11 @@ export default function CheckoutPage() {
                         <p className="text-sm text-gray-600 mb-2">Chave PIX (placeholder):</p>
                         <div className="flex gap-2">
                           <code className="flex-1 p-2 bg-white border rounded text-xs font-mono">
-                            moovepay@teste.br
+                            congregapay@teste.br
                           </code>
                           <button
                             className="px-3 py-2 bg-slate-900 text-white rounded text-sm font-medium hover:bg-slate-800"
-                            onClick={() => navigator.clipboard.writeText('moovepay@teste.br')}
+                            onClick={() => navigator.clipboard.writeText('congregapay@teste.br')}
                           >
                             Copiar
                           </button>

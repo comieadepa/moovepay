@@ -1,4 +1,4 @@
-# 📋 MoovePay — Checklist Diário do Agente de IA
+# 📋 CongregaPay — Checklist Diário do Agente de IA
 
 Atualizado em: **05/02/2026**
 
@@ -8,7 +8,7 @@ Objetivo: manter um “briefing operacional” do projeto para qualquer agente (
 
 ## 🎯 Resumo Executivo
 
-**MoovePay** é uma plataforma SaaS de **gestão de eventos (multi-tenant em evolução)** com:
+**CongregaPay** é uma plataforma SaaS de **gestão de eventos (multi-tenant em evolução)** com:
 - criação/publicação de eventos
 - tipos de inscrição
 - inscrições (individual e em lote via carrinho/checkout)
@@ -84,7 +84,7 @@ Redirect URIs (Google Cloud Console):
 - `http://localhost:3000/api/auth/google/callback`
 - `https://SEU-DOMINIO/api/auth/google/callback`
 
-Em produção, configure `APP_ORIGIN` no Vercel com o domínio canônico (ex.: `https://moovepay.com.br`).
+Em produção, configure `APP_ORIGIN` no Vercel com o domínio canônico (ex.: `https://congregapay.com.br`).
 
 ### Admin (staff)
 ```env

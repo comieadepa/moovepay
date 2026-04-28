@@ -40,14 +40,22 @@ export async function POST(request: NextRequest) {
     console.log('[API SIGNUP] Usuário criado com sucesso:', user.id)
 
     // Multi-tenant: cria Tenant + membership owner + defaultTenantId (best-effort)
-    try {
-      await supabase.from('Tenant').insert({ id: user.id, name: user.name })
-      await supabase.from('TenantMember').insert({ tenantId: user.id, userId: user.id, role: 'owner' })
-      await supabase.from('User').update({ defaultTenantId: user.id }).eq('id', user.id)
-    } catch (e) {
-      // Se a migration ainda não foi aplicada, não bloquear signup
-      console.warn('[API SIGNUP] Multi-tenant não aplicado ainda:', e)
-    }
+    // Multi-tenant: cria Tenant + membership owner + defaultTenantId
+    const { error: tenantError } = await supabase
+      .from('Tenant')
+      .upsert({ id: user.id, name: user.name }, { onConflict: 'id' })
+    if (tenantError) console.warn('[API SIGNUP] Tenant upsert:', tenantError.message)
+
+    const { error: memberError } = await supabase
+      .from('TenantMember')
+      .upsert({ tenantId: user.id, userId: user.id, role: 'owner' }, { onConflict: 'tenantId,userId' })
+    if (memberError) console.warn('[API SIGNUP] TenantMember upsert:', memberError.message)
+
+    const { error: updateError } = await supabase
+      .from('User')
+      .update({ defaultTenantId: user.id })
+      .eq('id', user.id)
+    if (updateError) console.warn('[API SIGNUP] defaultTenantId update:', updateError.message)
 
     return NextResponse.json(
       {

@@ -36,7 +36,7 @@ const faqItems: FAQItem[] = [
     id: 4,
     category: 'evento',
     question: 'Como criar um evento na plataforma?',
-    answer: 'Primeiramente, crie sua conta no MoovePay (é grátis!). Depois faça login, vá em "Criar Novo Evento" e preencha os dados básicos como nome, descrição, datas, imagem e tipos de ingressos. Você pode salvar como rascunho e publicar depois.',
+    answer: 'Primeiramente, crie sua conta no CongregaPay (é grátis!). Depois faça login, vá em "Criar Novo Evento" e preencha os dados básicos como nome, descrição, datas, imagem e tipos de ingressos. Você pode salvar como rascunho e publicar depois.',
   },
   {
     id: 5,
@@ -114,7 +114,7 @@ export default function AjudaPage() {
           <Link href={backHref} className="flex items-center gap-2">
             <Image 
               src="/logo.png" 
-              alt="MoovePay Logo" 
+              alt="CongregaPay Logo" 
               width={180} 
               height={60}
               className="h-14 w-auto"
@@ -207,7 +207,7 @@ export default function AjudaPage() {
       {/* Footer */}
       <footer className="bg-gray-900 text-gray-400 py-12 px-4 sm:px-6 lg:px-8">
         <div className="max-w-4xl mx-auto text-center">
-          <p>&copy; 2026 MoovePay. Todos os direitos reservados.</p>
+          <p>&copy; 2026 CongregaPay. Todos os direitos reservados.</p>
         </div>
       </footer>
     </main>

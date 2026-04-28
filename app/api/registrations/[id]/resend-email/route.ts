@@ -31,10 +31,13 @@ export async function POST(
     return NextResponse.json({ error: 'Não autorizado' }, { status: 403 })
   }
 
-  const template = emailTemplates.registrationConfirmation(
-    reg.fullName,
-    event?.name || 'Evento'
-  )
+  // Só envia voucher se a inscrição estiver paga; caso contrário envia confirmação pendente
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || ''
+  const voucherUrl = `${appUrl}/voucher/${reg.id}`
+
+  const template = reg.status === 'paid'
+    ? emailTemplates.voucherEmail(reg.fullName, event?.name || 'Evento', voucherUrl)
+    : emailTemplates.registrationConfirmation(reg.fullName, event?.name || 'Evento')
 
   try {
     await sendEmail({

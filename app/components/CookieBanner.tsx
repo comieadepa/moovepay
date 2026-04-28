@@ -9,14 +9,14 @@ export function CookieBanner() {
 
   useEffect(() => {
     // Verificar se o usuário já aceitou cookies
-    const cookieConsent = localStorage.getItem('moovepay_cookie_consent')
+    const cookieConsent = localStorage.getItem('congregapay_cookie_consent')
     if (!cookieConsent) {
       setIsVisible(true)
     }
   }, [])
 
   const handleAccept = () => {
-    localStorage.setItem('moovepay_cookie_consent', JSON.stringify({
+    localStorage.setItem('congregapay_cookie_consent', JSON.stringify({
       accepted: true,
       timestamp: new Date().toISOString(),
     }))
@@ -24,7 +24,7 @@ export function CookieBanner() {
   }
 
   const handleReject = () => {
-    localStorage.setItem('moovepay_cookie_consent', JSON.stringify({
+    localStorage.setItem('congregapay_cookie_consent', JSON.stringify({
       accepted: false,
       timestamp: new Date().toISOString(),
     }))

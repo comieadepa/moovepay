@@ -14,7 +14,7 @@ const inter = Inter({
 })
 
 export const metadata: Metadata = {
-  title: 'MoovePay - Gestão de Eventos',
+  title: 'CongregaPay - Gestão de Eventos',
   description: 'Sistema de gestão de eventos multi-tenant com inscrições, pagamentos e checkin',
 }
 

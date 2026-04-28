@@ -52,22 +52,53 @@ export async function GET(request: NextRequest) {
 
     const tenantId = verified.tenantId || verified.userId
 
-    const member = await isTenantMember(tenantId, verified.userId)
-    if (!member) {
-      return NextResponse.json({ error: 'Não autorizado (tenant)' }, { status: 403 })
+    // Verifica membership — se a tabela não existir ainda (migration pendente), usa fallback por creatorId
+    let useTenantFilter = true
+    try {
+      let member = await isTenantMember(tenantId, verified.userId)
+      if (!member) {
+        if (tenantId === verified.userId) {
+          try {
+            await supabase.from('Tenant').upsert({ id: tenantId, name: verified.email }, { onConflict: 'id' })
+            await supabase.from('TenantMember').insert({ tenantId, userId: verified.userId, role: 'owner' })
+          } catch {
+            // insert falhou (já existe ou tabela ausente) — continua
+          }
+        } else {
+          return NextResponse.json({ error: 'Não autorizado (tenant)' }, { status: 403 })
+        }
+      }
+    } catch {
+      // Migration de multi-tenant não aplicada — usa fallback por creatorId
+      useTenantFilter = false
     }
 
-    const { data: events, error: eventsError } = await supabase
+    let query = supabase
       .from('Event')
       .select(`
         *,
         registrations:Registration(id),
-        payments:Payment(value, status)
+        payments:Payment(value, status),
+        inscriptionTypes:InscriptionType(value)
       `)
-      .eq('tenantId', tenantId)
       .order('createdAt', { ascending: false })
 
-    if (eventsError) throw eventsError
+    if (useTenantFilter) {
+      query = query.eq('tenantId', tenantId)
+    } else {
+      query = query.eq('creatorId', verified.userId)
+    }
+
+    const { data: events, error: eventsError } = await query
+
+    if (eventsError) {
+      // Tabela Event não existe ainda — retorna lista vazia sem erro
+      const msg = String((eventsError as any)?.message || '')
+      if (msg.includes('does not exist') || msg.includes('PGRST')) {
+        return NextResponse.json({ success: true, events: [] }, { status: 200 })
+      }
+      throw eventsError
+    }
 
     return NextResponse.json({ success: true, events }, { status: 200 })
   } catch (error) {
