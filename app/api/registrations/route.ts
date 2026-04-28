@@ -90,21 +90,29 @@ export async function POST(request: NextRequest) {
       registrations.push(r)
     }
 
-    // Enviar email de confirmação
-    try {
-      const emailTemplate = emailTemplates.registrationConfirmation(
-        participants[0].fullName,
-        event.name
-      )
-      
-      await sendEmail({
-        to: participants[0].email,
-        subject: emailTemplate.subject,
-        html: emailTemplate.html,
-      })
-    } catch (emailError) {
-      console.error('Erro ao enviar email de confirmação:', emailError)
-      // Continuar mesmo se o email falhar
+    // Enviar email de confirmação para cada participante
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://congregapay.com.br'
+    const isFree = Number(inscriptionType.value) === 0
+
+    for (const reg of registrations) {
+      try {
+        let emailTemplate
+        if (isFree) {
+          const voucherUrl = `${appUrl}/voucher/${reg.id}`
+          emailTemplate = emailTemplates.voucherEmail(reg.fullName, event.name, voucherUrl)
+        } else {
+          emailTemplate = emailTemplates.registrationConfirmation(reg.fullName, event.name)
+        }
+
+        await sendEmail({
+          to: reg.email,
+          subject: emailTemplate.subject,
+          html: emailTemplate.html,
+        })
+      } catch (emailError: any) {
+        console.error(`[EMAIL] Falha ao enviar para ${reg.email}:`, emailError?.message ?? emailError)
+        // Continua — falha de email não cancela a inscrição
+      }
     }
 
     return NextResponse.json(

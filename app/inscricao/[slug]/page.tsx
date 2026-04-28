@@ -76,7 +76,6 @@ export default function InscricaoEventoPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [success, setSuccess] = useState<{ registrationIds: string[]; cartId?: string; totalValue: number } | null>(null)
 
   const customFields = useMemo(() => {
     const raw = (event as any)?.customFields
@@ -179,7 +178,6 @@ export default function InscricaoEventoPage() {
       if (!event) return
       setIsSubmitting(true)
       setError(null)
-      setSuccess(null)
 
       validateCustomRequired(values.participants)
 
@@ -198,41 +196,28 @@ export default function InscricaoEventoPage() {
       if (!res.ok) throw new Error(json?.error || 'Erro ao enviar inscrição')
 
       const ids = Array.isArray(json?.registrations) ? json.registrations.map((r: any) => r.id) : [json?.registration?.id].filter(Boolean)
-      setSuccess({
-        registrationIds: ids,
-        cartId: json?.cartId,
-        totalValue: Number(json?.totalValue || 0),
-      })
-    } catch (e: any) {
-      setError(e?.message || 'Erro ao enviar inscrição')
-    } finally {
-      setIsSubmitting(false)
-    }
-  }
+      const resolvedTotal = Number(json?.totalValue ?? 0)
 
-  // Redireciona automaticamente após inscrição bem-sucedida
-  useEffect(() => {
-    if (!success || !event) return
+      if (resolvedTotal === 0) {
+        // Gratuito: redireciona diretamente para confirmação
+        const firstId = ids[0] as string | undefined
+        const orderCode = firstId
+          ? firstId.replace(/-/g, '').substring(0, 8).toUpperCase()
+          : Math.random().toString(36).substring(2, 10).toUpperCase()
+        const qs = new URLSearchParams({
+          registrations: String(ids.length),
+          total: '0.00',
+          method: 'free',
+          code: orderCode,
+        })
+        router.push(`/confirmacao?${qs.toString()}`)
+        return
+      }
 
-    if (success.totalValue === 0) {
-      // Gratuito: vai direto para confirmação
-      const firstId = success.registrationIds[0]
-      const orderCode = firstId
-        ? firstId.replace(/-/g, '').substring(0, 8).toUpperCase()
-        : Math.random().toString(36).substring(2, 10).toUpperCase()
-      const qs = new URLSearchParams({
-        registrations: String(success.registrationIds.length),
-        total: '0.00',
-        method: 'free',
-        code: orderCode,
-      })
-      router.push(`/confirmacao?${qs.toString()}`)
-    } else {
       // Pago: popula carrinho e vai para checkout
-      clearCart()
-      const values = form.getValues()
       const type = event.inscriptionTypes.find((t) => t.id === values.inscriptionTypeId)
       if (type) {
+        clearCart()
         addItem({
           eventId: event.id,
           eventName: event.name,
@@ -249,8 +234,12 @@ export default function InscricaoEventoPage() {
         })
       }
       router.push('/checkout')
+    } catch (e: any) {
+      setError(e?.message || 'Erro ao enviar inscrição')
+    } finally {
+      setIsSubmitting(false)
     }
-  }, [success, router, event, form, addItem, clearCart])
+  }
 
   // ── Helpers ──────────────────────────────────────────────────────────────
   const money = (value: number) => {
@@ -316,32 +305,14 @@ export default function InscricaoEventoPage() {
     { label: 'PAGAMENTO', num: '2' },
     { label: 'CONFIRMADO', icon: true },
   ]
-  const currentStep = success ? 2 : 0
-
-  // ── Success redirect ──────────────────────────────────────────────────────
-  if (success) {
-    return (
-      <div className="min-h-screen bg-slate-100 flex items-center justify-center px-4">
-        <div className="w-full max-w-sm bg-white rounded-2xl shadow-sm p-8 text-center space-y-4">
-          <div className="w-16 h-16 rounded-full bg-emerald-100 flex items-center justify-center mx-auto">
-            <svg className="w-8 h-8 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-            </svg>
-          </div>
-          <h2 className="text-xl font-bold text-slate-900">Inscrição registrada!</h2>
-          <p className="text-sm text-slate-500">Redirecionando para o pagamento...</p>
-          <div className="w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto" />
-        </div>
-      </div>
-    )
-  }
+  const currentStep = 0
 
   return (
     <div className="min-h-screen bg-slate-100">
       {/* Banner */}
       {event.bannerUrl ? (
-        <div className="w-full overflow-hidden" style={{ maxHeight: 220 }}>
-          <img src={event.bannerUrl} alt={event.name} className="w-full object-cover object-top" />
+        <div className="h-48 w-full overflow-hidden">
+          <img src={event.bannerUrl} alt={event.name} className="w-full h-full object-cover object-top" />
         </div>
       ) : (
         <div className="h-28 bg-gradient-to-r from-blue-900 via-blue-800 to-indigo-900" />

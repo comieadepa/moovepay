@@ -13,7 +13,7 @@ export async function sendEmail({
   to,
   subject,
   html,
-  from = process.env.NEXT_PUBLIC_EMAIL_FROM || 'noreply@congregapay.com.br',
+  from = process.env.EMAIL_FROM || 'noreply@congregapay.com.br',
 }: EmailPayload) {
   try {
     const data = await resend.emails.send({
@@ -91,12 +91,49 @@ export const emailTemplates = {
 
   // Confirmação de inscrição
   registrationConfirmation: (participantName: string, eventName: string) => ({
-    subject: `Inscrição confirmada em ${eventName}`,
+    subject: `📋 Inscrição recebida: ${eventName}`,
     html: `
-      <h2>Olá, ${participantName}!</h2>
-      <p>Sua inscrição para <strong>${eventName}</strong> foi recebida com sucesso!</p>
-      <p>Aguarde o processamento do pagamento e em breve você receberá seu voucher.</p>
-    `,
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+<body style="margin:0;padding:0;background:#f1f5f9;font-family:Arial,sans-serif">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#f1f5f9;padding:32px 16px">
+    <tr><td align="center">
+      <table width="100%" style="max-width:480px;background:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.08)">
+        <tr>
+          <td style="background:linear-gradient(135deg,#2563eb,#4f46e5);padding:32px 32px 24px;text-align:center">
+            <div style="color:#bfdbfe;font-size:11px;font-weight:700;letter-spacing:3px;text-transform:uppercase;margin-bottom:8px">CongregaPay</div>
+            <h1 style="margin:0;color:#ffffff;font-size:22px;font-weight:700;line-height:1.3">Inscrição recebida!</h1>
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:32px">
+            <p style="margin:0 0 8px;color:#374151;font-size:15px">Olá, <strong>${participantName}</strong>!</p>
+            <p style="margin:0 0 24px;color:#6b7280;font-size:14px;line-height:1.6">
+              Sua inscrição para <strong>${eventName}</strong> foi recebida com sucesso.
+            </p>
+            <table width="100%" cellpadding="0" cellspacing="0" style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;margin-bottom:24px">
+              <tr><td style="padding:16px 20px">
+                <p style="margin:0;color:#166534;font-size:13px;line-height:1.6">
+                  ✅ Seu pagamento está sendo processado.<br>
+                  Assim que confirmado, você receberá o voucher com QR Code para o check-in.
+                </p>
+              </td></tr>
+            </table>
+            <p style="margin:0;color:#9ca3af;font-size:12px;text-align:center">Guarde este e-mail como comprovante de inscrição.</p>
+          </td>
+        </tr>
+        <tr>
+          <td style="background:#f8fafc;padding:20px 32px;border-top:1px solid #e2e8f0;text-align:center">
+            <p style="margin:0;color:#94a3b8;font-size:12px">Dúvidas? Entre em contato pelo nosso suporte.</p>
+            <p style="margin:6px 0 0;color:#cbd5e1;font-size:11px">© 2026 CongregaPay</p>
+          </td>
+        </tr>
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>`,
   }),
 
   // Pagamento em aberto

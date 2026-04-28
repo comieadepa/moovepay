@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { useCart, CartItem } from '@/store/cart'
 import { Badge } from '@/components/ui/badge'
+import { CalendarDays, Clock, MapPin, MonitorSmartphone, User2, FileText } from 'lucide-react'
 
 interface InscriptionType {
   id: string
@@ -180,64 +181,97 @@ export default function EventPage() {
       <div className="max-w-6xl mx-auto px-4 py-12">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Event Details */}
-          <div className="lg:col-span-2">
+          <div className="lg:col-span-2 space-y-6">
             {/* Event Info Cards */}
-            <div className="grid grid-cols-2 gap-4 mb-8">
-              <Card>
-                <CardContent className="pt-6">
-                  <p className="text-sm text-slate-500 mb-2">Início</p>
-                  <p className="font-semibold">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="flex items-start gap-4 bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
+                <div className="flex-shrink-0 w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center">
+                  <CalendarDays className="w-5 h-5 text-blue-600" />
+                </div>
+                <div>
+                  <p className="text-xs font-medium text-slate-400 uppercase tracking-wide mb-1">Início</p>
+                  <p className="font-semibold text-slate-900">
                     {format(startDate, "dd 'de' MMMM 'de' yyyy", { locale: ptBR })}
                   </p>
-                  <p className="text-sm text-slate-600">{format(startDate, 'HH:mm', { locale: ptBR })}</p>
-                </CardContent>
-              </Card>
+                  <p className="text-sm text-slate-500 flex items-center gap-1 mt-0.5">
+                    <Clock className="w-3.5 h-3.5" />
+                    {format(startDate, 'HH:mm', { locale: ptBR })}
+                  </p>
+                </div>
+              </div>
 
-              <Card>
-                <CardContent className="pt-6">
-                  <p className="text-sm text-slate-500 mb-2">Término</p>
-                  <p className="font-semibold">
+              <div className="flex items-start gap-4 bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
+                <div className="flex-shrink-0 w-10 h-10 rounded-xl bg-purple-50 flex items-center justify-center">
+                  <CalendarDays className="w-5 h-5 text-purple-600" />
+                </div>
+                <div>
+                  <p className="text-xs font-medium text-slate-400 uppercase tracking-wide mb-1">Término</p>
+                  <p className="font-semibold text-slate-900">
                     {format(endDate, "dd 'de' MMMM 'de' yyyy", { locale: ptBR })}
                   </p>
-                  <p className="text-sm text-slate-600">{format(endDate, 'HH:mm', { locale: ptBR })}</p>
-                </CardContent>
-              </Card>
+                  <p className="text-sm text-slate-500 flex items-center gap-1 mt-0.5">
+                    <Clock className="w-3.5 h-3.5" />
+                    {format(endDate, 'HH:mm', { locale: ptBR })}
+                  </p>
+                </div>
+              </div>
 
-              <Card>
-                <CardContent className="pt-6">
-                  <p className="text-sm text-slate-500 mb-2">Local</p>
-                  <p className="font-semibold">{event.location}</p>
-                </CardContent>
-              </Card>
+              {event.location ? (
+                <div className="flex items-start gap-4 bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
+                  <div className="flex-shrink-0 w-10 h-10 rounded-xl bg-emerald-50 flex items-center justify-center">
+                    <MapPin className="w-5 h-5 text-emerald-600" />
+                  </div>
+                  <div>
+                    <p className="text-xs font-medium text-slate-400 uppercase tracking-wide mb-1">Local</p>
+                    <p className="font-semibold text-slate-900">{event.location}</p>
+                  </div>
+                </div>
+              ) : null}
 
-              <Card>
-                <CardContent className="pt-6">
-                  <p className="text-sm text-slate-500 mb-2">Formato</p>
-                  <p className="font-semibold capitalize">{event.eventFormat}</p>
-                </CardContent>
-              </Card>
+              {event.eventFormat ? (
+                <div className="flex items-start gap-4 bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
+                  <div className="flex-shrink-0 w-10 h-10 rounded-xl bg-amber-50 flex items-center justify-center">
+                    <MonitorSmartphone className="w-5 h-5 text-amber-600" />
+                  </div>
+                  <div>
+                    <p className="text-xs font-medium text-slate-400 uppercase tracking-wide mb-1">Formato</p>
+                    <p className="font-semibold text-slate-900 capitalize">{event.eventFormat}</p>
+                  </div>
+                </div>
+              ) : null}
             </div>
 
             {/* Description */}
-            <Card className="mb-8">
-              <CardHeader>
-                <CardTitle>Sobre o evento</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-slate-700 whitespace-pre-wrap">{event.description}</p>
-              </CardContent>
-            </Card>
+            <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6">
+              <div className="flex items-center gap-2.5 mb-4">
+                <div className="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center">
+                  <FileText className="w-4 h-4 text-slate-600" />
+                </div>
+                <h2 className="text-lg font-semibold text-slate-900">Sobre o evento</h2>
+              </div>
+              <p className="text-slate-600 whitespace-pre-wrap leading-relaxed">{event.description}</p>
+            </div>
 
             {/* Organizer */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Organizador</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="font-semibold text-slate-900">{event.creator.name}</p>
-                <p className="text-slate-600">{event.creator.email}</p>
-              </CardContent>
-            </Card>
+            <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6">
+              <div className="flex items-center gap-2.5 mb-4">
+                <div className="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center">
+                  <User2 className="w-4 h-4 text-slate-600" />
+                </div>
+                <h2 className="text-lg font-semibold text-slate-900">Organizador</h2>
+              </div>
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center flex-shrink-0">
+                  <span className="text-white font-semibold text-sm">
+                    {event.creator.name?.charAt(0).toUpperCase() ?? '?'}
+                  </span>
+                </div>
+                <div>
+                  <p className="font-semibold text-slate-900">{event.creator.name}</p>
+                  <p className="text-sm text-slate-500">{event.creator.email}</p>
+                </div>
+              </div>
+            </div>
           </div>
 
           {/* Sidebar - Registration */}

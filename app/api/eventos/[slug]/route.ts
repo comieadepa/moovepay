@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabase } from '@/lib/supabase-server'
 
+export const dynamic = 'force-dynamic'
+
 export async function GET(
   _request: NextRequest,
   { params }: { params: { slug: string } }
@@ -58,9 +60,11 @@ export async function GET(
     )
 
     // Normalizar payload para o formato que o client espera
+    const rawBanner = event.banner ?? ''
     const data = {
       ...event,
-      bannerUrl: event.banner ?? '',
+      // Fallback: corrige URLs que ainda referenciam o bucket antigo (pre-migration)
+      bannerUrl: rawBanner.replace('/moovepay-media/', '/congregapay-media/'),
       shortDescription: event.description ?? '',
       location: event.location ?? '',
       eventFormat: event.eventFormat ?? '',

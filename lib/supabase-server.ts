@@ -18,6 +18,11 @@ export const supabase = createClient(supabaseUrl, supabaseServiceKey, {
     autoRefreshToken: false,
     persistSession: false,
   },
+  global: {
+    // Garante que Next.js 14 não faça cache das requests do Supabase
+    fetch: (url: RequestInfo | URL, options?: RequestInit) =>
+      fetch(url, { ...options, cache: 'no-store' }),
+  },
 })
 
 // ==================== TIPOS ====================

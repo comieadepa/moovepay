@@ -1,23 +1,30 @@
 'use client'
 
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
 import { useRouter } from 'next/navigation'
 import { useReactToPrint } from 'react-to-print'
 import { QRCodeSVG } from 'qrcode.react'
 import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
+import * as XLSX from 'xlsx'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import {
   ArrowLeft,
+  CheckCircle,
+  CheckCircle2,
+  Clock,
+  Edit2,
+  FileSpreadsheet,
   Mail,
   Printer,
-  Search,
-  CheckCircle,
-  Edit2,
   RefreshCw,
-  ScanLine,
+  Search,
+  TrendingUp,
+  Users,
+  Users2,
+  XCircle,
 } from 'lucide-react'
 
 type Registration = {
@@ -44,9 +51,21 @@ const STATUS_LABELS: Record<string, string> = {
 }
 
 const STATUS_COLORS: Record<string, string> = {
-  paid: 'bg-emerald-100 text-emerald-800',
-  pending: 'bg-amber-100 text-amber-800',
-  cancelled: 'bg-red-100 text-red-800',
+  paid: 'bg-emerald-100 text-emerald-800 ring-1 ring-emerald-200',
+  pending: 'bg-amber-100 text-amber-800 ring-1 ring-amber-200',
+  cancelled: 'bg-red-100 text-red-800 ring-1 ring-red-200',
+}
+
+const STATUS_DOTS: Record<string, string> = {
+  paid: 'bg-emerald-500',
+  pending: 'bg-amber-500',
+  cancelled: 'bg-red-500',
+}
+
+const STATUS_ICONS: Record<string, React.ReactNode> = {
+  paid: <CheckCircle2 className="h-3 w-3" />,
+  pending: <Clock className="h-3 w-3" />,
+  cancelled: <XCircle className="h-3 w-3" />,
 }
 
 export default function InscritosPage({ params }: { params: { id: string } }) {
@@ -58,6 +77,7 @@ export default function InscritosPage({ params }: { params: { id: string } }) {
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all')
   const [eventName, setEventName] = useState('')
+  const [hasPaidTypes, setHasPaidTypes] = useState(false)
 
   // Edit modal
   const [editReg, setEditReg] = useState<Registration | null>(null)
@@ -76,13 +96,7 @@ export default function InscritosPage({ params }: { params: { id: string } }) {
   const voucherPrintTrigger = useRef(false)
 
   // Print refs
-  const listPrintRef = useRef<HTMLDivElement>(null)
   const voucherPrintRef = useRef<HTMLDivElement>(null)
-
-  const handlePrintList = useReactToPrint({
-    content: () => listPrintRef.current,
-    documentTitle: `Inscritos - ${eventName}`,
-  })
 
   const handlePrintVoucher = useReactToPrint({
     content: () => voucherPrintRef.current,
@@ -115,6 +129,13 @@ export default function InscritosPage({ params }: { params: { id: string } }) {
       setRegistrations(list)
       const firstName = list[0]?.event?.name
       if (firstName) setEventName(firstName)
+      // Verifica se evento tem tipos pagos
+      const typesRes = await fetch(`/api/events/${params.id}/inscription-types`)
+      if (typesRes.ok) {
+        const typesData = await typesRes.json()
+        const types: { value: number }[] = typesData.inscriptionTypes ?? typesData.data ?? []
+        setHasPaidTypes(types.some((t) => t.value > 0))
+      }
     } catch (e: any) {
       setError(e.message)
     } finally {
@@ -229,6 +250,36 @@ export default function InscritosPage({ params }: { params: { id: string } }) {
     }
   }
 
+  function handleExportExcel() {
+    const customKeys = Array.from(
+      new Set(filtered.flatMap((r) => Object.keys(r.customData ?? {})))
+    )
+
+    const rows = filtered.map((r) => {
+      const base: Record<string, unknown> = {
+        'Nome': r.fullName,
+        'Email': r.email,
+        'CPF': r.cpf || '',
+        'WhatsApp': r.whatsapp || '',
+        'Tipo de Inscrição': r.inscriptionType?.name || '',
+        'Status': STATUS_LABELS[r.status] || r.status,
+        'Valor (R$)': Number(r.totalValue || 0),
+        'Data de Inscrição': format(new Date(r.createdAt), 'dd/MM/yyyy HH:mm', { locale: ptBR }),
+      }
+      for (const key of customKeys) {
+        base[key] = r.customData?.[key] ?? ''
+      }
+      return base
+    })
+
+    const ws = XLSX.utils.json_to_sheet(rows)
+    const wb = XLSX.utils.book_new()
+    XLSX.utils.book_append_sheet(wb, ws, 'Inscritos')
+    const safeName = (eventName || params.id).replace(/[^\w\s-]/g, '').trim().replace(/\s+/g, '-')
+    const dateStr = format(new Date(), 'yyyyMMdd')
+    XLSX.writeFile(wb, `inscritos-${safeName}-${dateStr}.xlsx`)
+  }
+
   function triggerVoucherPrint(reg: Registration) {
     voucherPrintTrigger.current = true
     setVoucherReg(reg)
@@ -241,70 +292,6 @@ export default function InscritosPage({ params }: { params: { id: string } }) {
 
   return (
     <div className="max-w-6xl">
-      {/* ── ÁREA DE IMPRESSÃO: Lista LGPD (sem dados sensíveis) ── */}
-      <div style={{ overflow: 'hidden', height: 0 }}>
-        <div ref={listPrintRef} style={{ padding: '16px', fontFamily: 'sans-serif' }}>
-          <h1 style={{ fontSize: '18px', fontWeight: 'bold', marginBottom: '4px' }}>
-            Lista de Inscritos
-          </h1>
-          <p style={{ fontSize: '13px', marginBottom: '16px', color: '#555' }}>
-            Evento: {eventName}
-          </p>
-          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px' }}>
-            <thead>
-              <tr style={{ background: '#f1f5f9' }}>
-                {['Nome', 'Email', 'Tipo de Inscrição', 'Status', 'Valor', 'Data'].map(
-                  (h) => (
-                    <th
-                      key={h}
-                      style={{
-                        border: '1px solid #cbd5e1',
-                        padding: '6px 8px',
-                        textAlign: 'left',
-                      }}
-                    >
-                      {h}
-                    </th>
-                  )
-                )}
-              </tr>
-            </thead>
-            <tbody>
-              {filtered.map((r) => (
-                <tr key={r.id}>
-                  <td style={{ border: '1px solid #cbd5e1', padding: '6px 8px' }}>
-                    {r.fullName}
-                  </td>
-                  <td style={{ border: '1px solid #cbd5e1', padding: '6px 8px' }}>
-                    {r.email}
-                  </td>
-                  <td style={{ border: '1px solid #cbd5e1', padding: '6px 8px' }}>
-                    {r.inscriptionType?.name || '—'}
-                  </td>
-                  <td style={{ border: '1px solid #cbd5e1', padding: '6px 8px' }}>
-                    {STATUS_LABELS[r.status] || r.status}
-                  </td>
-                  <td style={{ border: '1px solid #cbd5e1', padding: '6px 8px' }}>
-                    {Number(r.totalValue || 0).toLocaleString('pt-BR', {
-                      style: 'currency',
-                      currency: 'BRL',
-                    })}
-                  </td>
-                  <td style={{ border: '1px solid #cbd5e1', padding: '6px 8px' }}>
-                    {format(new Date(r.createdAt), 'dd/MM/yyyy', { locale: ptBR })}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-          <p style={{ fontSize: '10px', marginTop: '16px', color: '#888' }}>
-            Total: {filtered.length} inscrito(s). Gerado em{' '}
-            {format(new Date(), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}. Dados
-            sensíveis (CPF, WhatsApp) omitidos conforme LGPD.
-          </p>
-        </div>
-      </div>
-
       {/* ── ÁREA DE IMPRESSÃO: Voucher individual ── */}
       <div style={{ overflow: 'hidden', height: 0 }}>
         <div ref={voucherPrintRef} style={{ padding: '12mm', fontFamily: 'sans-serif' }}>
@@ -378,13 +365,16 @@ export default function InscritosPage({ params }: { params: { id: string } }) {
             <ArrowLeft className="h-4 w-4 mr-1" />
             Voltar ao evento
           </Button>
-          <Button
-            onClick={() => router.push(`/eventos/${params.id}/checkin`)}
-            className="bg-emerald-600 hover:bg-emerald-700 text-white gap-2"
-          >
-            <ScanLine className="h-4 w-4" />
-            Check-in
-          </Button>
+          {hasPaidTypes && (
+            <Button
+              variant="outline"
+              onClick={() => router.push(`/eventos/${params.id}/staff`)}
+              className="gap-2"
+            >
+              <Users2 className="h-4 w-4" />
+              Colaboradores
+            </Button>
+          )}
           <Button
             variant="outline"
             onClick={fetchRegistrations}
@@ -395,12 +385,13 @@ export default function InscritosPage({ params }: { params: { id: string } }) {
           </Button>
           <Button
             variant="outline"
-            onClick={handlePrintList}
+            onClick={handleExportExcel}
             disabled={filtered.length === 0}
-            title="Imprimir lista sem dados sensíveis (LGPD)"
+            title="Exportar lista de inscritos para Excel"
+            className="border-emerald-300 text-emerald-700 hover:bg-emerald-50 hover:border-emerald-400 gap-1.5"
           >
-            <Printer className="h-4 w-4 mr-1" />
-            Lista (LGPD)
+            <FileSpreadsheet className="h-4 w-4" />
+            Lista de inscritos
           </Button>
         </div>
       </div>
@@ -414,16 +405,19 @@ export default function InscritosPage({ params }: { params: { id: string } }) {
 
       {/* ── CARDS DE RESUMO ── */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-        {[
-          { label: 'Total', value: stats.total, color: 'text-slate-700' },
-          { label: 'Pagos', value: stats.paid, color: 'text-emerald-700' },
-          { label: 'Pendentes', value: stats.pending, color: 'text-amber-700' },
-          { label: 'Receita confirmada', value: totalRevenue, color: 'text-blue-700' },
-        ].map((s) => (
-          <Card key={s.label}>
+        {([
+          { label: 'Total de inscritos', value: stats.total,   color: 'text-slate-800',   border: 'border-l-slate-400',   icon: <Users className="h-5 w-5 text-slate-400" /> },
+          { label: 'Confirmados',        value: stats.paid,    color: 'text-emerald-700', border: 'border-l-emerald-500', icon: <CheckCircle2 className="h-5 w-5 text-emerald-500" /> },
+          { label: 'Pendentes',          value: stats.pending, color: 'text-amber-700',   border: 'border-l-amber-500',   icon: <Clock className="h-5 w-5 text-amber-500" /> },
+          { label: 'Receita confirmada', value: totalRevenue,  color: 'text-blue-700',    border: 'border-l-blue-500',    icon: <TrendingUp className="h-5 w-5 text-blue-500" /> },
+        ] as { label: string; value: string | number; color: string; border: string; icon: ReactNode }[]).map((s) => (
+          <Card key={s.label} className={`border-l-4 ${s.border}`}>
             <CardContent className="pt-4 pb-4">
-              <p className="text-xs text-slate-500 mb-1">{s.label}</p>
-              <p className={`text-xl font-bold ${s.color}`}>{s.value}</p>
+              <div className="flex items-center justify-between mb-2">
+                <p className="text-xs font-medium text-slate-500">{s.label}</p>
+                {s.icon}
+              </div>
+              <p className={`text-2xl font-bold ${s.color}`}>{s.value}</p>
             </CardContent>
           </Card>
         ))}
@@ -487,23 +481,23 @@ export default function InscritosPage({ params }: { params: { id: string } }) {
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="border-b bg-slate-50">
-                    <th className="px-4 py-3 text-left font-medium text-slate-600">
+                  <tr className="border-b bg-slate-100">
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wide">
                       Participante
                     </th>
-                    <th className="px-4 py-3 text-left font-medium text-slate-600">
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wide">
                       Tipo
                     </th>
-                    <th className="px-4 py-3 text-left font-medium text-slate-600">
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wide">
                       Status
                     </th>
-                    <th className="px-4 py-3 text-right font-medium text-slate-600">
+                    <th className="px-4 py-3 text-right text-xs font-semibold text-slate-600 uppercase tracking-wide">
                       Valor
                     </th>
-                    <th className="px-4 py-3 text-left font-medium text-slate-600">
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wide">
                       Data
                     </th>
-                    <th className="px-4 py-3 text-right font-medium text-slate-600">
+                    <th className="px-4 py-3 text-right text-xs font-semibold text-slate-600 uppercase tracking-wide">
                       Ações
                     </th>
                   </tr>
@@ -531,10 +525,13 @@ export default function InscritosPage({ params }: { params: { id: string } }) {
                         </td>
                         <td className="px-4 py-3">
                           <span
-                            className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
+                            className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold ${
                               STATUS_COLORS[reg.status] || 'bg-slate-100 text-slate-700'
                             }`}
                           >
+                            {STATUS_ICONS[reg.status] ?? (
+                              <span className={`w-1.5 h-1.5 rounded-full ${STATUS_DOTS[reg.status] || 'bg-slate-400'}`} />
+                            )}
                             {STATUS_LABELS[reg.status] || reg.status}
                           </span>
                         </td>

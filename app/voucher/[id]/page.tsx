@@ -27,7 +27,8 @@ export default async function VoucherPage({ params }: Props) {
   const voucher = Array.isArray(reg.voucher) ? reg.voucher[0] : (reg.voucher as any)
 
   const qrPayload = `congregapay:voucher:${reg.id}`
-  const isPaid = reg.status === 'paid'
+  // 'confirmed' = gratuito confirmado | 'paid' = pago confirmado
+  const isValid = reg.status === 'paid' || reg.status === 'confirmed'
   const isUsed = voucher?.used === true
 
   const startDate = event?.startDate
@@ -56,7 +57,7 @@ export default async function VoucherPage({ params }: Props) {
             <span className="bg-gray-500 text-white text-xs font-bold px-4 py-1.5 rounded-full shadow">
               ✓ UTILIZADO
             </span>
-          ) : isPaid ? (
+          ) : isValid ? (
             <span className="bg-emerald-500 text-white text-xs font-bold px-4 py-1.5 rounded-full shadow">
               ✓ VÁLIDO
             </span>
@@ -69,13 +70,13 @@ export default async function VoucherPage({ params }: Props) {
 
         {/* QR Code */}
         <div className="flex justify-center px-6 py-4">
-          <div className={`p-3 rounded-2xl border-2 ${isPaid && !isUsed ? 'border-emerald-200 bg-emerald-50' : 'border-gray-200 bg-gray-50'}`}>
+          <div className={`p-3 rounded-2xl border-2 ${isValid && !isUsed ? 'border-emerald-200 bg-emerald-50' : 'border-gray-200 bg-gray-50'}`}>
             <QRCodeSVG
               value={qrPayload}
               size={192}
               level="H"
               includeMargin={false}
-              fgColor={isPaid && !isUsed ? '#065f46' : '#6b7280'}
+              fgColor={isValid && !isUsed ? '#065f46' : '#6b7280'}
             />
           </div>
         </div>

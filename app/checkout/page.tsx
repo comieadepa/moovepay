@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -24,6 +24,9 @@ export default function CheckoutPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
+  // Evita que o useEffect de "carrinho vazio" sobrescreva a navegação pós-pagamento
+  const navigatingRef = useRef(false)
+
   const subtotal = getSubtotal()
   const discount = getDiscount()
   const platformFee = getPlatformFee()
@@ -41,7 +44,7 @@ export default function CheckoutPage() {
   }
 
   useEffect(() => {
-    if (items.length === 0) {
+    if (items.length === 0 && !navigatingRef.current) {
       router.push('/')
     }
   }, [items, router])
@@ -112,13 +115,14 @@ export default function CheckoutPage() {
 
       // Evento gratuito: pula o checkout financeiro e redireciona direto
       if (total === 0) {
-        clearCart()
         const qs = new URLSearchParams({
           registrations: String(allIds.length),
           total: '0.00',
           method: 'free',
         })
+        navigatingRef.current = true
         router.push(`/confirmacao?${qs.toString()}`)
+        clearCart()
         return
       }
 
@@ -144,6 +148,7 @@ export default function CheckoutPage() {
         throw new Error(checkoutData?.error || 'Erro ao criar pagamento')
       }
 
+      navigatingRef.current = true
       clearCart()
 
       const qs = new URLSearchParams({

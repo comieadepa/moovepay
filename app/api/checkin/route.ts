@@ -54,9 +54,23 @@ export async function POST(request: NextRequest) {
   const event = Array.isArray(reg.event) ? reg.event[0] : (reg.event as any)
   const voucher = Array.isArray(reg.voucher) ? reg.voucher[0] : (reg.voucher as any)
 
-  // Verifica se o operador tem acesso ao evento
-  const ownsEvent = event?.tenantId === ctx.tenantId || event?.creatorId === ctx.userId
-  if (!ownsEvent) {
+  // Verifica se o operador tem acesso ao evento:
+  // 1. É dono (mesmo tenant ou criador), OU
+  // 2. É EventStaff com role checkin_operator/event_manager
+  const isOwner = event?.tenantId === ctx.tenantId || event?.creatorId === ctx.userId
+
+  let isStaff = false
+  if (!isOwner) {
+    const { data: staffEntry } = await supabase
+      .from('EventStaff')
+      .select('id, role')
+      .eq('eventId', event?.id)
+      .eq('userId', ctx.userId)
+      .maybeSingle()
+    isStaff = !!staffEntry
+  }
+
+  if (!isOwner && !isStaff) {
     return NextResponse.json({ error: 'Sem permissão para este evento' }, { status: 403 })
   }
 
@@ -69,8 +83,8 @@ export async function POST(request: NextRequest) {
     voucherId: voucher?.id ?? null,
   }
 
-  // Pagamento não confirmado
-  if (reg.status !== 'paid') {
+  // Pagamento não confirmado ('paid' = pago | 'confirmed' = gratuito confirmado)
+  if (reg.status !== 'paid' && reg.status !== 'confirmed') {
     await supabase.from('CheckinLog').insert({
       ...logBase,
       voucherId: voucher?.id ?? 'unknown',
