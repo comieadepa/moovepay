@@ -39,8 +39,6 @@ interface CartState {
   getTotalParticipants: () => number
 }
 
-const PLATFORM_FEE = 0.10 // 10%
-
 const emptyParticipant = () => ({
   fullName: '',
   cpf: '',
@@ -176,18 +174,16 @@ export const useCart = create<CartState>()(
       },
 
       getPlatformFee: () => {
-        const state = get()
-        const subtotal = state.getSubtotal()
-        const discount = state.getDiscount()
-        return (subtotal - discount) * PLATFORM_FEE
+        // Regra financeira: o participante paga exatamente o valor da inscrição.
+        // A taxa da plataforma (10%) é retida no repasse ao organizador/tenant, não somada ao comprador.
+        return 0
       },
 
       getTotal: () => {
         const state = get()
         const subtotal = state.getSubtotal()
         const discount = state.getDiscount()
-        const fee = state.getPlatformFee()
-        return subtotal - discount + fee
+        return Math.max(0, subtotal - discount)
       },
 
       getTotalParticipants: () => {

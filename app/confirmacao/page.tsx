@@ -12,6 +12,7 @@ function ConfirmacaoPageContent() {
   const [total, setTotal] = useState<string | null>(null)
   const [method, setMethod] = useState<string | null>(null)
   const [pixCopyPaste, setPixCopyPaste] = useState<string | null>(null)
+  const [pixQrCodeBase64, setPixQrCodeBase64] = useState<string | null>(null)
   const [boletoUrl, setBoletoUrl] = useState<string | null>(null)
   const [copied, setCopied] = useState(false)
   const [code, setCode] = useState<string | null>(null)
@@ -22,6 +23,7 @@ function ConfirmacaoPageContent() {
     setTotal(params.get('total'))
     setMethod(params.get('method'))
     setPixCopyPaste(params.get('pixCopyPaste'))
+    setPixQrCodeBase64(params.get('pixQrCodeBase64'))
     setBoletoUrl(params.get('boletoUrl'))
     const rawCode = params.get('code')
     setCode(rawCode ? `#${rawCode}` : `#${Math.random().toString(36).substring(2, 10).toUpperCase()}`)
@@ -122,8 +124,16 @@ function ConfirmacaoPageContent() {
                 <CardContent className="pt-6">
                   <h3 className="font-semibold text-slate-900 mb-4 text-left">Pague via PIX</h3>
                   <div className="flex flex-col items-center gap-4">
-                    <div className="p-3 bg-white border rounded-lg">
-                      <QRCodeSVG value={pixCopyPaste} size={180} level="H" />
+                    <div className="p-3 bg-white border rounded-lg flex items-center justify-center min-w-[200px] min-h-[200px]">
+                      {pixQrCodeBase64 ? (
+                        <img
+                          src={`data:image/png;base64,${pixQrCodeBase64}`}
+                          alt="QR Code PIX ASAAS"
+                          className="w-[180px] h-[180px] object-contain"
+                        />
+                      ) : (
+                        <QRCodeSVG value={pixCopyPaste} size={180} level="H" />
+                      )}
                     </div>
                     <p className="text-sm text-slate-600 text-center">
                       Escaneie o QR Code ou copie o código abaixo

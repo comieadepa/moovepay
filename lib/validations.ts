@@ -150,6 +150,42 @@ export const updateSupportTicketSchema = z.object({
   priority: z.enum(['low', 'normal', 'high', 'urgent']).optional(),
 })
 
+// ==================== SAQUE ====================
+export const withdrawalRequestSchema = z.object({
+  amount: z.number().positive('O valor do saque deve ser maior que zero'),
+  pixKeyType: z.enum(['cpf', 'cnpj', 'email', 'phone', 'random'], {
+    errorMap: () => ({ message: 'Tipo de chave PIX inválido' }),
+  }),
+  pixKey: z.string().min(3, 'Chave PIX inválida').max(100, 'Chave PIX muito longa'),
+}).refine(
+  (data) => {
+    const raw = data.pixKey.trim()
+    if (data.pixKeyType === 'cpf') {
+      const digits = raw.replace(/\D/g, '')
+      return digits.length === 11
+    }
+    if (data.pixKeyType === 'cnpj') {
+      const digits = raw.replace(/\D/g, '')
+      return digits.length === 14
+    }
+    if (data.pixKeyType === 'email') {
+      return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(raw)
+    }
+    if (data.pixKeyType === 'phone') {
+      const digits = raw.replace(/\D/g, '')
+      return digits.length >= 10 && digits.length <= 13
+    }
+    if (data.pixKeyType === 'random') {
+      return raw.length >= 20
+    }
+    return true
+  },
+  {
+    message: 'Formato da chave PIX incompatível com o tipo selecionado',
+    path: ['pixKey'],
+  }
+)
+
 export type SignUpInput = z.infer<typeof signUpSchema>
 export type LoginInput = z.infer<typeof loginSchema>
 export type AdminLoginInput = z.infer<typeof adminLoginSchema>
@@ -161,3 +197,4 @@ export type PaymentInput = z.infer<typeof paymentSchema>
 export type CardPaymentInput = z.infer<typeof cardPaymentSchema>
 export type CreateSupportTicketInput = z.infer<typeof createSupportTicketSchema>
 export type UpdateSupportTicketInput = z.infer<typeof updateSupportTicketSchema>
+export type WithdrawalRequestInput = z.infer<typeof withdrawalRequestSchema>

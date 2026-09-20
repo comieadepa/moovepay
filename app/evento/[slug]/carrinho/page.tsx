@@ -78,8 +78,7 @@ export default function CartPage() {
 
   const subtotal = items.reduce((sum, item) => sum + item.value * item.quantity, 0)
   const discount = (subtotal * couponDiscount) / 100
-  const platformFee = (subtotal - discount) * 0.1
-  const total = subtotal - discount + platformFee
+  const total = Math.max(0, subtotal - discount)
 
   const participantsValid = useMemo(() => {
     for (const item of items) {
@@ -324,10 +323,6 @@ export default function CartPage() {
                       <span>- {money(discount)}</span>
                     </div>
                   )}
-                  <div className="flex justify-between text-sm">
-                    <span className="text-slate-600">Taxa ({subtotal > 0 ? '10%' : 'gratuito'}):</span>
-                    <span>{money(platformFee)}</span>
-                  </div>
                   <div className="flex justify-between items-center pt-2 border-t border-slate-200">
                     <span className="text-lg font-semibold text-slate-900">Total:</span>
                     <span className="text-2xl font-bold text-emerald-700">{money(total)}</span>

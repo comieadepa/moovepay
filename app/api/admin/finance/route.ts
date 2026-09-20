@@ -24,7 +24,7 @@ export async function GET(request: NextRequest) {
     const { data, error } = await supabase
       .from('Payment')
       .select('id, value, status, paidAt, event:Event(id, name, tenantId)')
-      .eq('status', 'received')
+      .in('status', ['paid', 'received'])
 
     if (error) {
       const message = String((error as any)?.message || '')

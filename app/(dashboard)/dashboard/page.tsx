@@ -58,9 +58,16 @@ export default function DashboardPage() {
   const [tenantPlanId, setTenantPlanId] = useState<string | null>(null)
   const [showWithdrawModal, setShowWithdrawModal] = useState(false)
   const [withdrawAmount, setWithdrawAmount] = useState('')
+  const [pixKeyType, setPixKeyType] = useState<'cpf' | 'cnpj' | 'email' | 'phone' | 'random'>('cpf')
+  const [pixKey, setPixKey] = useState('')
+  const [withdrawSubmitting, setWithdrawSubmitting] = useState(false)
+  const [withdrawError, setWithdrawError] = useState<string | null>(null)
+  const [withdrawSuccess, setWithdrawSuccess] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [hasPaidEvents, setHasPaidEvents] = useState(false)
+  const [refreshTrigger, setRefreshTrigger] = useState(0)
+  const [myWithdrawals, setMyWithdrawals] = useState<any[]>([])
 
   const [stats, setStats] = useState<DashboardStats>({
     totalEvents: 0,
@@ -135,22 +142,25 @@ export default function DashboardPage() {
         setIsLoading(true)
         setError(null)
 
-        const response = await fetch('/api/events', {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-        })
+        const [eventsRes, withdrawalsRes] = await Promise.all([
+          fetch('/api/events', {
+            method: 'GET',
+            headers: { 'Content-Type': 'application/json' },
+          }),
+          fetch('/api/withdrawals', {
+            method: 'GET',
+            headers: { 'Content-Type': 'application/json' },
+          }).catch(() => null),
+        ])
 
-        if (response.status === 401) {
+        if (eventsRes.status === 401) {
           router.push('/login')
           return
         }
 
-        const data = await response.json()
-        if (!response.ok) {
-          // 403 de tenant ainda não configurado — trata como lista vazia, sem exibir erro
-          if (response.status === 403) {
+        const data = await eventsRes.json()
+        if (!eventsRes.ok) {
+          if (eventsRes.status === 403) {
             if (isMounted) setIsLoading(false)
             return
           }
@@ -158,6 +168,19 @@ export default function DashboardPage() {
         }
 
         const events = (data?.events || []) as EventLite[]
+
+        let pendingWithdrawals = 0
+        let completedWithdrawals = 0
+        if (withdrawalsRes && withdrawalsRes.ok) {
+          const wData = await withdrawalsRes.json().catch(() => null)
+          if (wData?.totals) {
+            pendingWithdrawals = Number(wData.totals.pending || 0)
+            completedWithdrawals = Number(wData.totals.completed || 0)
+          }
+          if (Array.isArray(wData?.withdrawals)) {
+            setMyWithdrawals(wData.withdrawals)
+          }
+        }
 
         // Verifica se existe ao menos 1 evento pago (não gratuito)
         const paidExists = events.some((e) =>
@@ -172,13 +195,25 @@ export default function DashboardPage() {
         )
 
         const totalRevenue = events.reduce((sum, event) => {
-          const received = (event.payments || []).filter((p) => p?.status === 'received')
+          const received = (event.payments || []).filter((p) => p?.status === 'paid' || p?.status === 'received')
           const eventRevenue = received.reduce((s, p) => s + Number(p?.value || 0), 0)
           return sum + eventRevenue
         }, 0)
 
+        // Saldo disponível: 90% dos eventos pagos (10% de taxa) e 100% dos eventos gratuitos,
+        // subtraindo saques já solicitados (pendentes) ou já pagos (concluídos).
+        const totalNetRevenue = events.reduce((sum, event) => {
+          const isPaidEvent = (event.inscriptionTypes || []).some((t) => Number(t?.value || 0) > 0)
+          const received = (event.payments || []).filter((p) => p?.status === 'paid' || p?.status === 'received')
+          const eventGross = received.reduce((s, p) => s + Number(p?.value || 0), 0)
+          const netShare = isPaidEvent ? eventGross * 0.9 : eventGross
+          return sum + netShare
+        }, 0)
+
+        const availableBalance = Math.max(0, totalNetRevenue - (pendingWithdrawals + completedWithdrawals))
+
         const recentEvents = events.slice(0, 5).map((event) => {
-          const received = (event.payments || []).filter((p) => p?.status === 'received')
+          const received = (event.payments || []).filter((p) => p?.status === 'paid' || p?.status === 'received')
           const revenue = received.reduce((s, p) => s + Number(p?.value || 0), 0)
 
           const baseDate = event.startDate || event.createdAt
@@ -202,8 +237,8 @@ export default function DashboardPage() {
           totalEvents,
           totalRegistrations,
           totalRevenue,
-          availableBalance: totalRevenue,
-          pendingWithdrawals: 0,
+          availableBalance,
+          pendingWithdrawals,
           recentEvents,
         })
       } catch (e: any) {
@@ -220,13 +255,59 @@ export default function DashboardPage() {
     return () => {
       isMounted = false
     }
-  }, [router])
+  }, [router, refreshTrigger])
 
-  const handleWithdrawRequest = () => {
-    if (withdrawAmount && parseFloat(withdrawAmount) > 0) {
-      console.log('Solicitação de saque:', withdrawAmount)
-      setShowWithdrawModal(false)
-      setWithdrawAmount('')
+  const handleWithdrawRequest = async () => {
+    const numAmount = parseFloat(withdrawAmount)
+    if (isNaN(numAmount) || numAmount <= 0) {
+      setWithdrawError('Informe um valor válido maior que zero.')
+      return
+    }
+
+    if (numAmount > stats.availableBalance) {
+      setWithdrawError('Valor superior ao saldo disponível.')
+      return
+    }
+
+    if (!pixKey.trim()) {
+      setWithdrawError('Informe a chave PIX para repasse.')
+      return
+    }
+
+    setWithdrawSubmitting(true)
+    setWithdrawError(null)
+    setWithdrawSuccess(null)
+
+    try {
+      const res = await fetch('/api/withdrawals', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          amount: numAmount,
+          pixKey: pixKey.trim(),
+          pixKeyType,
+        }),
+      })
+
+      const data = await res.json().catch(() => ({}))
+
+      if (!res.ok) {
+        throw new Error(data?.error || 'Erro ao solicitar saque.')
+      }
+
+      setWithdrawSuccess('Solicitação de saque enviada com sucesso! Em análise.')
+      setRefreshTrigger((prev) => prev + 1)
+
+      setTimeout(() => {
+        setShowWithdrawModal(false)
+        setWithdrawAmount('')
+        setPixKey('')
+        setWithdrawSuccess(null)
+      }, 2000)
+    } catch (err: any) {
+      setWithdrawError(err?.message || 'Falha ao processar solicitação de saque.')
+    } finally {
+      setWithdrawSubmitting(false)
     }
   }
 
@@ -428,6 +509,87 @@ export default function DashboardPage() {
           )}
         </div>
 
+        {/* ── HISTÓRICO DE SAQUES DO TENANT ── */}
+        {myWithdrawals.length > 0 && (
+          <div className="lg:col-span-2 bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
+              <div>
+                <h2 className="font-semibold text-slate-900">Histórico de Saques</h2>
+                <p className="text-xs text-slate-500">Acompanhe o status dos seus repasses</p>
+              </div>
+              <span className="text-xs font-semibold text-slate-400 bg-slate-100 px-2.5 py-1 rounded-full">
+                {myWithdrawals.length} solicitação{myWithdrawals.length !== 1 ? 'ões' : ''}
+              </span>
+            </div>
+
+            <div className="divide-y divide-slate-100 overflow-x-auto">
+              {myWithdrawals.map((w) => {
+                const isPending = w.status === 'pending'
+                const isCompleted = w.status === 'completed'
+                const isRejected = w.status === 'rejected'
+
+                return (
+                  <div key={w.id} className="p-4 sm:px-6 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:bg-slate-50/70 transition">
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2">
+                        <p className="font-bold text-slate-900 text-base">{moneyFormatter.format(w.amount)}</p>
+                        {isPending && (
+                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-700">
+                            Em análise
+                          </span>
+                        )}
+                        {isCompleted && (
+                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-700">
+                            Pago
+                          </span>
+                        )}
+                        {isRejected && (
+                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-rose-100 text-rose-700">
+                            Rejeitado
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-xs text-slate-500 mt-1 font-mono">
+                        PIX: <span className="font-medium text-slate-700">{w.pixKey}</span> ({w.pixKeyType})
+                      </p>
+                      {isRejected && w.notes && (
+                        <p className="text-xs text-rose-600 mt-1 bg-rose-50 p-2 rounded-lg border border-rose-100">
+                          Motivo da rejeição: <span className="font-medium">{w.notes}</span>
+                        </p>
+                      )}
+                      {isCompleted && w.notes && (
+                        <p className="text-xs text-slate-500 mt-1 italic">
+                          Obs: {w.notes}
+                        </p>
+                      )}
+                    </div>
+
+                    <div className="text-left sm:text-right text-xs text-slate-400 shrink-0">
+                      <p>
+                        {new Date(w.createdAt).toLocaleDateString('pt-BR', {
+                          day: '2-digit',
+                          month: 'short',
+                          year: 'numeric',
+                        })}
+                      </p>
+                      {w.receiptUrl && (
+                        <a
+                          href={w.receiptUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="text-blue-600 hover:underline font-semibold inline-block mt-1"
+                        >
+                          Ver Comprovante ↗
+                        </a>
+                      )}
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        )}
+
         {/* Sidebar: Perfil + Financeiro */}
         <div className="space-y-4">
 
@@ -505,38 +667,111 @@ export default function DashboardPage() {
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6 space-y-4">
             <div>
               <h2 className="text-lg font-bold text-slate-900">Solicitar Saque</h2>
-              <p className="text-sm text-slate-500">Digite o valor que deseja sacar</p>
+              <p className="text-sm text-slate-500">Informe o valor e seus dados PIX para repasse</p>
             </div>
+
+            {withdrawError && (
+              <div className="p-3 bg-red-50 border border-red-200 text-red-700 rounded-xl text-xs">
+                {withdrawError}
+              </div>
+            )}
+
+            {withdrawSuccess && (
+              <div className="p-3 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-xl text-xs font-medium">
+                {withdrawSuccess}
+              </div>
+            )}
+
             <div className="bg-emerald-50 rounded-xl p-4 border border-emerald-100">
-              <p className="text-xs text-slate-600 mb-1">Saldo Disponível</p>
+              <p className="text-xs text-slate-600 mb-1">Saldo Disponível para Saque</p>
               <p className="text-2xl font-bold text-emerald-700">{moneyFormatter.format(stats.availableBalance)}</p>
             </div>
+
             <div>
-              <label className="text-sm font-medium text-slate-700 block mb-1">Valor a Sacar</label>
+              <label className="text-sm font-medium text-slate-700 block mb-1">Valor a Sacar (R$)</label>
               <input
                 type="number"
                 placeholder="0,00"
                 value={withdrawAmount}
                 onChange={(e) => setWithdrawAmount(e.target.value)}
+                disabled={withdrawSubmitting || !!withdrawSuccess}
                 className="w-full px-3 py-2.5 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 text-sm"
                 max={stats.availableBalance}
                 step="0.01"
               />
             </div>
-            <p className="text-xs text-slate-400">Processado em até 2 dias úteis.</p>
+
+            <div>
+              <label className="text-sm font-medium text-slate-700 block mb-1">Tipo de Chave PIX</label>
+              <select
+                value={pixKeyType}
+                onChange={(e) => setPixKeyType(e.target.value as any)}
+                disabled={withdrawSubmitting || !!withdrawSuccess}
+                className="w-full px-3 py-2.5 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 text-sm bg-white"
+              >
+                <option value="cpf">CPF</option>
+                <option value="cnpj">CNPJ</option>
+                <option value="email">E-mail</option>
+                <option value="phone">Celular / Telefone</option>
+                <option value="random">Chave Aleatória (EVP)</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="text-sm font-medium text-slate-700 block mb-1">Chave PIX de Destino</label>
+              <input
+                type="text"
+                placeholder={
+                  pixKeyType === 'cpf'
+                    ? '000.000.000-00'
+                    : pixKeyType === 'cnpj'
+                    ? '00.000.000/0000-00'
+                    : pixKeyType === 'email'
+                    ? 'seuemail@exemplo.com'
+                    : pixKeyType === 'phone'
+                    ? '(99) 99999-9999'
+                    : 'Cole sua chave aleatória'
+                }
+                value={pixKey}
+                onChange={(e) => setPixKey(e.target.value)}
+                disabled={withdrawSubmitting || !!withdrawSuccess}
+                className="w-full px-3 py-2.5 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 text-sm font-mono"
+              />
+            </div>
+
+            <p className="text-xs text-slate-400">
+              Transferência manual realizada pela plataforma em até 2 dias úteis.
+            </p>
+
             <div className="flex gap-3">
               <button
-                onClick={() => { setShowWithdrawModal(false); setWithdrawAmount('') }}
-                className="flex-1 border border-slate-200 rounded-xl py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors"
+                type="button"
+                onClick={() => {
+                  if (withdrawSubmitting) return
+                  setShowWithdrawModal(false)
+                  setWithdrawAmount('')
+                  setPixKey('')
+                  setWithdrawError(null)
+                  setWithdrawSuccess(null)
+                }}
+                disabled={withdrawSubmitting}
+                className="flex-1 border border-slate-200 rounded-xl py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors disabled:opacity-50"
               >
                 Cancelar
               </button>
               <button
+                type="button"
                 onClick={handleWithdrawRequest}
-                disabled={!withdrawAmount || parseFloat(withdrawAmount) === 0}
+                disabled={
+                  withdrawSubmitting ||
+                  !!withdrawSuccess ||
+                  !withdrawAmount ||
+                  parseFloat(withdrawAmount) <= 0 ||
+                  !pixKey.trim()
+                }
                 className="flex-1 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-40 text-white rounded-xl py-2.5 text-sm font-medium transition-colors"
               >
-                Confirmar Saque
+                {withdrawSubmitting ? 'Enviando...' : 'Confirmar Saque'}
               </button>
             </div>
           </div>

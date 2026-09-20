@@ -136,7 +136,7 @@ export default function EventosPage() {
         <div className="grid gap-4">
           {events.map((event) => {
             const totalRegistrations = event.registrations?.length || 0
-            const paidPayments = (event.payments || []).filter((p) => p.status === 'received')
+            const paidPayments = (event.payments || []).filter((p) => p.status === 'paid' || p.status === 'received')
             const totalRevenue = paidPayments.reduce((sum: number, p: any) => sum + Number(p.value || 0), 0)
             const isPublished = event.status === 'published'
             const isFinished = event.status === 'finished'
