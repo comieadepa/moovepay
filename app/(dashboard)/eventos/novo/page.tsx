@@ -211,9 +211,15 @@ export default function CreateEventPage() {
       }
 
       const parsedValue = Number(String(registrationValue).replace(',', '.'))
-      if (!isFree && (!Number.isFinite(parsedValue) || parsedValue < 0)) {
-        setError('Informe um valor válido para a inscrição')
-        return
+      if (!isFree) {
+        if (!Number.isFinite(parsedValue) || parsedValue <= 0) {
+          setError('Informe um valor válido para a inscrição')
+          return
+        }
+        if (parsedValue < 5) {
+          setError('O valor mínimo para inscrições pagas é de R$ 5,00 por participante.')
+          return
+        }
       }
 
       const pricingRes = await fetch(`/api/events/${result.event.id}/inscription-types`, {
@@ -535,19 +541,28 @@ export default function CreateEventPage() {
                     Evento gratuito
                   </label>
 
-                  <div className="grid gap-3 md:grid-cols-2">
-                    <div>
-                      <label className="text-sm font-medium text-slate-700">Valor da inscrição (R$)</label>
-                      <Input
-                        inputMode="decimal"
-                        placeholder="Ex: 49,90"
-                        value={registrationValue}
-                        disabled={isFree}
-                        onChange={(e) => setRegistrationValue(e.target.value)}
-                      />
-                      <p className="text-xs text-slate-500 mt-1">Para lote, o total será quantidade × valor.</p>
+                    <div className="grid gap-3 md:grid-cols-2">
+                      <div>
+                        <div className="flex items-center justify-between mb-1">
+                          <label className="text-sm font-medium text-slate-700">Valor da inscrição (R$)</label>
+                          {!isFree && (
+                            <span className="text-[11px] font-medium text-amber-600 bg-amber-50 px-2 py-0.5 rounded border border-amber-200">
+                              Mínimo R$ 5,00
+                            </span>
+                          )}
+                        </div>
+                        <Input
+                          inputMode="decimal"
+                          placeholder="Ex: 49,90"
+                          value={registrationValue}
+                          disabled={isFree}
+                          onChange={(e) => setRegistrationValue(e.target.value)}
+                        />
+                        <p className="text-xs text-slate-500 mt-1">
+                          {isFree ? 'Inscrições gratuitas não cobram valor do participante.' : 'Valor individual mínimo de R$ 5,00 por participante. Para lote, o total será quantidade × valor.'}
+                        </p>
+                      </div>
                     </div>
-                  </div>
                 </div>
               </div>
 

@@ -80,11 +80,21 @@ export const createEventSchema = z.object({
   customFields: z.array(eventCustomFieldSchema).optional(),
 })
 
-export const inscriptionTypeSchema = z.object({
-  name: z.string().min(1, 'Nome é obrigatório'),
-  value: z.coerce.number().nonnegative('Valor deve ser zero ou positivo'),
-  available: z.coerce.number().int().nonnegative('Disponibilidade deve ser não-negativa'),
-})
+export const inscriptionTypeSchema = z
+  .object({
+    name: z.string().min(1, 'Nome é obrigatório'),
+    value: z.coerce.number().nonnegative('Valor deve ser zero ou positivo'),
+    available: z.coerce.number().int().nonnegative('Disponibilidade deve ser não-negativa'),
+  })
+  .superRefine((val, ctx) => {
+    if (val.value > 0 && val.value < 5) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'O valor mínimo para inscrições pagas é R$ 5,00',
+        path: ['value'],
+      })
+    }
+  })
 
 // ==================== INSCRIÇÃO ====================
 const participantSchema = z.object({

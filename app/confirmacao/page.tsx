@@ -128,7 +128,7 @@ function ConfirmacaoPageContent() {
                       {pixQrCodeBase64 ? (
                         <img
                           src={`data:image/png;base64,${pixQrCodeBase64}`}
-                          alt="QR Code PIX ASAAS"
+                          alt="QR Code PIX"
                           className="w-[180px] h-[180px] object-contain"
                         />
                       ) : (

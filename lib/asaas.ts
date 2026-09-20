@@ -1,8 +1,11 @@
 import 'server-only'
 import axios from 'axios'
 
-// Prefer server-only var; fallback para manter compatibilidade com .env.local existente
-const ASAAS_API_URL = process.env.ASAAS_API_URL || process.env.NEXT_PUBLIC_ASAAS_API_URL
+// Prefer server-only var; fallback para manter compatibilidade com .env.local existente ou produção
+const ASAAS_API_URL =
+  process.env.ASAAS_API_URL ||
+  process.env.NEXT_PUBLIC_ASAAS_API_URL ||
+  'https://api.asaas.com/v3'
 const ASAAS_API_KEY = process.env.ASAAS_API_KEY
 
 const asaasClient = axios.create({

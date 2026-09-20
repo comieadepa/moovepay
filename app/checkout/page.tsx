@@ -58,6 +58,7 @@ export default function CheckoutPage() {
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('pix')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [mounted, setMounted] = useState(false)
 
   // ── Formulário do Cartão de Crédito ─────────────────────────────────────────
   const [cardNumber, setCardNumber] = useState('')
@@ -73,6 +74,10 @@ export default function CheckoutPage() {
   const [holderNumber, setHolderNumber] = useState('')
   const [holderProvince, setHolderProvince] = useState('')
   const [holderCity, setHolderCity] = useState('')
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
 
   // Preenchimento automático do primeiro participante nos dados do titular
   useEffect(() => {
@@ -101,10 +106,10 @@ export default function CheckoutPage() {
   }
 
   useEffect(() => {
-    if (items.length === 0 && !navigatingRef.current) {
+    if (mounted && items.length === 0 && !navigatingRef.current) {
       router.push('/')
     }
-  }, [items, router])
+  }, [mounted, items, router])
 
   const handleProcessPayment = async () => {
     setLoading(true)
@@ -301,6 +306,29 @@ export default function CheckoutPage() {
     }
   }
 
+  if (!mounted) {
+    return (
+      <div className="min-h-screen bg-slate-50/60 py-10">
+        <div className="max-w-4xl mx-auto px-4">
+          <div className="mb-6 flex items-center justify-between">
+            <div>
+              <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight">Finalizar compra</h1>
+              <p className="text-sm text-slate-500 mt-0.5">Revise seu pedido e escolha a forma de pagamento</p>
+            </div>
+            <div className="hidden sm:flex items-center gap-1.5 text-xs text-slate-500 bg-white border border-slate-200 px-3 py-1.5 rounded-full shadow-sm">
+              <Lock className="w-3.5 h-3.5 text-emerald-600" />
+              <span>Ambiente seguro SSL</span>
+            </div>
+          </div>
+          <div className="p-8 text-center bg-white border border-slate-200 rounded-xl">
+            <div className="w-6 h-6 border-2 border-emerald-600 border-t-transparent rounded-full animate-spin mx-auto mb-2" />
+            <p className="text-xs text-slate-500">Carregando detalhes do pedido...</p>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="min-h-screen bg-slate-50/60 py-10">
       <div className="max-w-4xl mx-auto px-4">
@@ -377,14 +405,14 @@ export default function CheckoutPage() {
                           <QrCode className="w-5 h-5 text-emerald-600" />
                         </div>
                         <p className="text-xs text-slate-500 mt-1">
-                          Aprovação imediata. O QR Code dinâmico do ASAAS e o código Copia e Cola serão gerados ao confirmar.
+                          Aprovação imediata. O QR Code dinâmico e o código Copia e Cola serão gerados ao confirmar.
                         </p>
 
                         {paymentMethod === 'pix' && (
                           <div className="mt-4 p-3.5 bg-white border border-emerald-200 rounded-xl text-xs text-slate-600 flex items-center gap-3">
                             <ShieldCheck className="w-5 h-5 text-emerald-600 shrink-0" />
                             <span>
-                              Ao clicar em confirmar, conectaremos diretamente ao ASAAS para criar sua cobrança PIX com QR Code real e seguro.
+                              Ao clicar em confirmar, geraremos sua cobrança PIX oficial com QR Code seguro pela plataforma de gestão do evento.
                             </span>
                           </div>
                         )}
@@ -425,7 +453,7 @@ export default function CheckoutPage() {
                           <CreditCard className="w-5 h-5 text-slate-600" />
                         </div>
                         <p className="text-xs text-slate-500 mt-1">
-                          Processamento seguro diretamente pelo ASAAS.
+                          Processamento seguro e criptografado pela plataforma.
                         </p>
 
                         {paymentMethod === 'card' && (
@@ -626,7 +654,7 @@ export default function CheckoutPage() {
                           <FileText className="w-5 h-5 text-slate-600" />
                         </div>
                         <p className="text-xs text-slate-500 mt-1">
-                          Vencimento em 1 dia útil. O link oficial do boleto gerado no ASAAS será disponibilizado logo após a confirmação.
+                          Vencimento em 1 dia útil. O link oficial do boleto gerado pela plataforma estará disponível logo após a confirmação.
                         </p>
                       </div>
                     </div>
@@ -690,7 +718,7 @@ export default function CheckoutPage() {
                     {loading ? (
                       <span className="flex items-center gap-2">
                         <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                        Processando no ASAAS...
+                        Processando pagamento...
                       </span>
                     ) : total === 0 ? (
                       'Confirmar Inscrição Gratuita'

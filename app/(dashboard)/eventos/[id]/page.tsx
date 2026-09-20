@@ -293,8 +293,13 @@ export default function EventDetailPage({ params }: { params: { id: string } }) 
       })
 
       const parsedValue = Number(String(registrationValue).replace(',', '.'))
-      if (!isFree && (!Number.isFinite(parsedValue) || parsedValue < 0)) {
-        throw new Error('Informe um valor válido para a inscrição')
+      if (!isFree) {
+        if (!Number.isFinite(parsedValue) || parsedValue <= 0) {
+          throw new Error('Informe um valor válido para a inscrição')
+        }
+        if (parsedValue < 5) {
+          throw new Error('O valor mínimo para inscrições pagas é de R$ 5,00 por participante.')
+        }
       }
 
       const pricingRes = await fetch(`/api/events/${params.id}/inscription-types`, {
@@ -717,7 +722,14 @@ export default function EventDetailPage({ params }: { params: { id: string } }) 
 
                     <div className="grid gap-3 md:grid-cols-2">
                       <div>
-                        <label className="text-sm font-medium text-slate-700">Valor da inscrição (R$)</label>
+                        <div className="flex items-center justify-between mb-1">
+                          <label className="text-sm font-medium text-slate-700">Valor da inscrição (R$)</label>
+                          {!isFree && (
+                            <span className="text-[11px] font-medium text-amber-600 bg-amber-50 px-2 py-0.5 rounded border border-amber-200">
+                              Mínimo R$ 5,00
+                            </span>
+                          )}
+                        </div>
                         <Input
                           inputMode="decimal"
                           placeholder="Ex: 49,90"
@@ -725,7 +737,9 @@ export default function EventDetailPage({ params }: { params: { id: string } }) 
                           disabled={isFree}
                           onChange={(e) => setRegistrationValue(e.target.value)}
                         />
-                        <p className="text-xs text-slate-500 mt-1">Para lote, o total será quantidade × valor.</p>
+                        <p className="text-xs text-slate-500 mt-1">
+                          {isFree ? 'Inscrições gratuitas não cobram valor do participante.' : 'Valor individual mínimo de R$ 5,00 por participante. Para lote, o total será quantidade × valor.'}
+                        </p>
                       </div>
                     </div>
                   </div>

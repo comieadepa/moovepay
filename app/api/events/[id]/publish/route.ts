@@ -36,6 +36,27 @@ export async function POST(
       return NextResponse.json({ error: 'Não autorizado' }, { status: 403 })
     }
 
+    // Validar se existem tipos de inscrição e se algum tipo pago está abaixo de R$ 5,00
+    const { data: inscriptionTypes, error: typesError } = await supabase
+      .from('InscriptionType')
+      .select('id, name, value, status')
+      .eq('eventId', params.id)
+
+    if (typesError) throw typesError
+
+    const invalidPaidType = (inscriptionTypes || []).find(
+      (t: any) => Number(t.value) > 0 && Number(t.value) < 5
+    )
+
+    if (invalidPaidType) {
+      return NextResponse.json(
+        {
+          error: `Não é possível publicar o evento: o tipo de inscrição "${invalidPaidType.name}" possui valor de R$ ${Number(invalidPaidType.value).toFixed(2)}, inferior ao mínimo permitido de R$ 5,00. Atualize o valor para pelo menos R$ 5,00 ou configure como gratuito.`,
+        },
+        { status: 400 }
+      )
+    }
+
     const { data: updated, error: updateError } = await supabase
       .from('Event')
       .update({ status: 'published' })

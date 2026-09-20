@@ -4,11 +4,31 @@ import { verifyToken } from '@/lib/auth'
 import { supabase } from '@/lib/supabase-server'
 import { isTenantMember } from '@/lib/rbac'
 
-const upsertSchema = z.object({
-  isFree: z.coerce.boolean().optional().default(false),
-  value: z.coerce.number().min(0, 'Valor inválido').optional().default(0),
-  name: z.string().min(1).optional().default('Inscrição'),
-})
+const upsertSchema = z
+  .object({
+    isFree: z.preprocess((v) => {
+      if (typeof v === 'string') return v.toLowerCase() === 'true'
+      return Boolean(v)
+    }, z.boolean()).optional().default(false),
+    value: z.coerce.number().min(0, 'Valor inválido').optional().default(0),
+    name: z.string().min(1).optional().default('Inscrição'),
+  })
+  .superRefine((val, ctx) => {
+    if (!val.isFree && val.value > 0 && val.value < 5) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'O valor mínimo para inscrições pagas é R$ 5,00',
+        path: ['value'],
+      })
+    }
+    if (!val.isFree && val.value === 0) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'Inscrições pagas devem ter valor mínimo de R$ 5,00. Para valor zero, marque como evento gratuito.',
+        path: ['value'],
+      })
+    }
+  })
 
 export async function POST(
   request: NextRequest,
