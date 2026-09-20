@@ -531,7 +531,12 @@ export default function EventDetailPage({ params }: { params: { id: string } }) 
                   name="banner"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Banner do Evento</FormLabel>
+                      <div className="flex items-center justify-between">
+                        <FormLabel>Banner do Evento</FormLabel>
+                        <span className="text-[11px] font-medium text-slate-500 bg-slate-100 px-2 py-0.5 rounded">
+                          16:9 • Recomendado: 1600×900 px
+                        </span>
+                      </div>
                       <FormControl>
                         <div className="space-y-2">
                           <input
@@ -555,7 +560,7 @@ export default function EventDetailPage({ params }: { params: { id: string } }) 
                               onClick={() => bannerInputRef.current?.click()}
                             >
                               <Upload className="h-4 w-4 mr-2" />
-                              {uploadingBanner ? 'Enviando banner...' : 'Adicionar banner'}
+                              {uploadingBanner ? 'Enviando banner...' : 'Adicionar banner (16:9 • 1600×900)'}
                             </Button>
                             <span className="text-xs text-slate-600 truncate">
                               {pickedBannerName || 'Nenhum arquivo selecionado'}
@@ -563,7 +568,7 @@ export default function EventDetailPage({ params }: { params: { id: string } }) 
                           </div>
 
                           <p className="text-xs text-slate-500">
-                            Envie um banner do seu dispositivo (você pode ajustar antes de enviar). Se preferir, cole uma URL pública abaixo.
+                            Formato horizontal <strong>16:9</strong> (ideal: 1600×900 px, máx. 5MB). Formatos: JPG, PNG ou WEBP. O sistema permite enquadrar, dar zoom e girar antes de salvar.
                           </p>
 
                           <Input
