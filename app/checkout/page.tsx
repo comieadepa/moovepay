@@ -57,6 +57,7 @@ export default function CheckoutPage() {
 
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('pix')
   const [loading, setLoading] = useState(false)
+  const [isNavigating, setIsNavigating] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [mounted, setMounted] = useState(false)
 
@@ -230,10 +231,12 @@ export default function CheckoutPage() {
           registrations: String(allIds.length),
           total: '0.00',
           method: 'free',
+          status: 'paid',
         })
         navigatingRef.current = true
-        router.push(`/confirmacao?${qs.toString()}`)
+        setIsNavigating(true)
         clearCart()
+        router.push(`/confirmacao?${qs.toString()}`)
         return
       }
 
@@ -287,26 +290,28 @@ export default function CheckoutPage() {
       }
 
       navigatingRef.current = true
-      clearCart()
+      setIsNavigating(true)
 
       const qs = new URLSearchParams({
         registrations: String(allIds.length),
         total: String(Number(total || 0).toFixed(2)),
         method: paymentMethod,
+        status: checkoutData.payment?.status || 'pending',
         paymentId: checkoutData.payment?.id || '',
         ...(checkoutData.payment?.pixCopyPaste ? { pixCopyPaste: checkoutData.payment.pixCopyPaste } : {}),
         ...(checkoutData.payment?.pixQrCodeBase64 ? { pixQrCodeBase64: checkoutData.payment.pixQrCodeBase64 } : {}),
         ...(checkoutData.payment?.boletoUrl ? { boletoUrl: checkoutData.payment.boletoUrl } : {}),
       })
+      clearCart()
       router.push(`/confirmacao?${qs.toString()}`)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Erro ao processar pagamento')
-    } finally {
       setLoading(false)
+      setIsNavigating(false)
     }
   }
 
-  if (!mounted) {
+  if (!mounted || isNavigating) {
     return (
       <div className="min-h-screen bg-slate-50/60 py-10">
         <div className="max-w-4xl mx-auto px-4">
@@ -322,7 +327,9 @@ export default function CheckoutPage() {
           </div>
           <div className="p-8 text-center bg-white border border-slate-200 rounded-xl">
             <div className="w-6 h-6 border-2 border-emerald-600 border-t-transparent rounded-full animate-spin mx-auto mb-2" />
-            <p className="text-xs text-slate-500">Carregando detalhes do pedido...</p>
+            <p className="text-xs text-slate-500">
+              {isNavigating ? 'Finalizando seu pedido e gerando comprovante...' : 'Carregando detalhes do pedido...'}
+            </p>
           </div>
         </div>
       </div>

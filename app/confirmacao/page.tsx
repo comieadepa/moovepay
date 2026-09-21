@@ -5,12 +5,14 @@ import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { QRCodeSVG } from 'qrcode.react'
+import { CheckCircle2, Clock, FileText } from 'lucide-react'
 
 function ConfirmacaoPageContent() {
   const router = useRouter()
   const [registrations, setRegistrations] = useState('0')
   const [total, setTotal] = useState<string | null>(null)
   const [method, setMethod] = useState<string | null>(null)
+  const [status, setStatus] = useState<string | null>(null)
   const [pixCopyPaste, setPixCopyPaste] = useState<string | null>(null)
   const [pixQrCodeBase64, setPixQrCodeBase64] = useState<string | null>(null)
   const [boletoUrl, setBoletoUrl] = useState<string | null>(null)
@@ -22,12 +24,16 @@ function ConfirmacaoPageContent() {
     setRegistrations(params.get('registrations') || '0')
     setTotal(params.get('total'))
     setMethod(params.get('method'))
+    setStatus(params.get('status'))
     setPixCopyPaste(params.get('pixCopyPaste'))
     setPixQrCodeBase64(params.get('pixQrCodeBase64'))
     setBoletoUrl(params.get('boletoUrl'))
     const rawCode = params.get('code')
     setCode(rawCode ? `#${rawCode}` : `#${Math.random().toString(36).substring(2, 10).toUpperCase()}`)
   }, [])
+
+  const isPending = method === 'pix' || method === 'boleto' || (status === 'pending' && method !== 'free')
+  const count = parseInt(registrations) || 1
 
   const money = (value: number) => {
     try {
@@ -49,6 +55,50 @@ function ConfirmacaoPageContent() {
     return m
   }
 
+  const getHeaderInfo = () => {
+    if (method === 'pix') {
+      return {
+        title: 'Aguardando pagamento via PIX',
+        subtitle: count === 1
+          ? 'Sua vaga foi pré-reservada! Complete o pagamento via PIX para confirmar sua inscrição.'
+          : `${count} vagas foram pré-reservadas! Complete o pagamento via PIX para confirmar as inscrições.`,
+        badgeColor: 'bg-amber-100 text-amber-800 border-amber-300',
+        badgeText: 'Pagamento pendente',
+        cardBg: 'border-amber-200 bg-amber-50/50',
+        iconBg: 'bg-amber-500',
+        icon: <Clock className="w-8 h-8 text-white" />,
+      }
+    }
+
+    if (method === 'boleto') {
+      return {
+        title: 'Aguardando pagamento do boleto',
+        subtitle: count === 1
+          ? 'Sua vaga foi pré-reservada! Realize o pagamento do boleto bancário para confirmar sua inscrição.'
+          : `${count} vagas foram pré-reservadas! Realize o pagamento do boleto bancário para confirmar as inscrições.`,
+        badgeColor: 'bg-amber-100 text-amber-800 border-amber-300',
+        badgeText: 'Pagamento pendente',
+        cardBg: 'border-amber-200 bg-amber-50/50',
+        iconBg: 'bg-amber-500',
+        icon: <FileText className="w-8 h-8 text-white" />,
+      }
+    }
+
+    return {
+      title: 'Inscrição confirmada',
+      subtitle: count === 1
+        ? '1 inscrição foi confirmada com sucesso.'
+        : `${count} inscrições foram confirmadas com sucesso.`,
+      badgeColor: 'bg-emerald-100 text-emerald-800 border-emerald-300',
+      badgeText: 'Confirmado',
+      cardBg: 'border-emerald-200 bg-emerald-50',
+      iconBg: 'bg-emerald-600',
+      icon: <CheckCircle2 className="w-8 h-8 text-white" />,
+    }
+  }
+
+  const headerInfo = getHeaderInfo()
+
   return (
     <>
       <style>{`
@@ -60,43 +110,35 @@ function ConfirmacaoPageContent() {
       `}</style>
       <div className="min-h-screen bg-slate-50 py-12">
       <div className="max-w-2xl mx-auto px-4">
-        <Card id="confirmacao-card" className="border-emerald-200 bg-emerald-50">
+        <Card id="confirmacao-card" className={headerInfo.cardBg}>
           <CardContent className="pt-12 text-center pb-12">
-            {/* Success Icon */}
-            <div className="mb-6 flex justify-center">
-              <div className="w-16 h-16 bg-emerald-600 rounded-full flex items-center justify-center">
-                <svg
-                  className="w-8 h-8 text-white"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M5 13l4 4L19 7"
-                  />
-                </svg>
+            {/* Status Icon */}
+            <div className="mb-4 flex justify-center">
+              <div className={`w-16 h-16 ${headerInfo.iconBg} rounded-full flex items-center justify-center shadow-sm`}>
+                {headerInfo.icon}
               </div>
             </div>
 
-            <h1 className="text-3xl font-bold text-slate-900 mb-3">Inscrição confirmada</h1>
+            <div className="mb-3">
+              <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold border ${headerInfo.badgeColor}`}>
+                {headerInfo.badgeText}
+              </span>
+            </div>
 
-            <p className="text-slate-700 text-lg mb-2">
-              {parseInt(registrations) === 1
-                ? '1 inscrição foi confirmada.'
-                : `${registrations} inscrições foram confirmadas.`}
+            <h1 className="text-3xl font-bold text-slate-900 mb-3">{headerInfo.title}</h1>
+
+            <p className="text-slate-700 text-base sm:text-lg mb-4 max-w-lg mx-auto">
+              {headerInfo.subtitle}
             </p>
 
             {code && (
-              <p className="text-sm font-mono text-emerald-700 bg-emerald-100 border border-emerald-300 rounded-md px-4 py-2 inline-block mb-6">
-                Seu código de inscrição é: <span className="font-bold">{code}</span>
+              <p className="text-sm font-mono text-slate-800 bg-white/80 border border-slate-300 rounded-md px-4 py-2 inline-block mb-6 shadow-sm">
+                Código de referência: <span className="font-bold">{code}</span>
               </p>
             )}
 
             {(total || method) && (
-              <Card className="mb-6 bg-white">
+              <Card className="mb-6 bg-white shadow-sm border-slate-200">
                 <CardContent className="pt-6">
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-left">
                     {total && (
@@ -189,24 +231,47 @@ function ConfirmacaoPageContent() {
                   <div>
                     <h3 className="font-semibold text-slate-900 mb-2">Próximas etapas</h3>
                     <ul className="space-y-2 text-slate-700">
-                      <li className="flex gap-3">
-                        <span className="font-bold text-emerald-700">1.</span>
-                        <span>Você receberá um email com os detalhes da sua inscrição</span>
-                      </li>
-                      {method !== 'free' && (
-                        <li className="flex gap-3">
-                          <span className="font-bold text-emerald-700">2.</span>
-                          <span>Seu comprovante de pagamento será enviado por email</span>
-                        </li>
+                      {isPending ? (
+                        <>
+                          <li className="flex gap-3">
+                            <span className="font-bold text-amber-600">1.</span>
+                            <span>Efetue o pagamento utilizando o QR Code, Pix Copia e Cola ou boleto acima</span>
+                          </li>
+                          <li className="flex gap-3">
+                            <span className="font-bold text-amber-600">2.</span>
+                            <span>Assim que o banco confirmar, sua inscrição será validada automaticamente</span>
+                          </li>
+                          <li className="flex gap-3">
+                            <span className="font-bold text-amber-600">3.</span>
+                            <span>Você receberá por e-mail a confirmação e seu voucher/QR code para check-in</span>
+                          </li>
+                          <li className="flex gap-3">
+                            <span className="font-bold text-amber-600">4.</span>
+                            <span>Compareça no local, na data e hora especificados</span>
+                          </li>
+                        </>
+                      ) : (
+                        <>
+                          <li className="flex gap-3">
+                            <span className="font-bold text-emerald-700">1.</span>
+                            <span>Você receberá um email com os detalhes da sua inscrição</span>
+                          </li>
+                          {method !== 'free' && (
+                            <li className="flex gap-3">
+                              <span className="font-bold text-emerald-700">2.</span>
+                              <span>Seu comprovante de pagamento será enviado por email</span>
+                            </li>
+                          )}
+                          <li className="flex gap-3">
+                            <span className="font-bold text-emerald-700">{method !== 'free' ? '3' : '2'}.</span>
+                            <span>Você receberá um voucher/QR code para check-in no evento</span>
+                          </li>
+                          <li className="flex gap-3">
+                            <span className="font-bold text-emerald-700">{method !== 'free' ? '4' : '3'}.</span>
+                            <span>Compareça no local, na data e hora especificados</span>
+                          </li>
+                        </>
                       )}
-                      <li className="flex gap-3">
-                        <span className="font-bold text-emerald-700">{method !== 'free' ? '3' : '2'}.</span>
-                        <span>Você receberá um voucher/QR code para check-in no evento</span>
-                      </li>
-                      <li className="flex gap-3">
-                        <span className="font-bold text-emerald-700">{method !== 'free' ? '4' : '3'}.</span>
-                        <span>Compareça no local, na data e hora especificados</span>
-                      </li>
                     </ul>
                   </div>
 
