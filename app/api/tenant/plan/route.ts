@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getAuthContext } from '@/lib/rbac'
-import { supabase } from '@/lib/supabase-server'
+import { getTenantPlanContext } from '@/lib/plan-guard'
+import { PLANS } from '@/lib/plans'
 
 export const dynamic = 'force-dynamic'
 
@@ -8,22 +9,21 @@ export async function GET(request: NextRequest) {
   const ctx = getAuthContext(request)
   if (!ctx) return NextResponse.json({ error: 'Não autenticado' }, { status: 401 })
 
-  const tenantId = request.nextUrl.searchParams.get('tenantId') || ctx.tenantId
+  // Obter contexto seguro do plano baseado estritamente na autenticação
+  const planCtx = await getTenantPlanContext(ctx)
+  const planDetails = PLANS[planCtx.planId] ?? PLANS.essencial
 
-  // Só pode consultar o próprio tenant (a menos que seja admin)
-  if (tenantId !== ctx.tenantId && ctx.role !== 'admin') {
-    return NextResponse.json({ error: 'Não autorizado' }, { status: 403 })
-  }
-
-  const { data, error } = await supabase
-    .from('Tenant')
-    .select('planId')
-    .eq('id', tenantId)
-    .maybeSingle()
-
-  if (error || !data) {
-    return NextResponse.json({ planId: 'essencial' })
-  }
-
-  return NextResponse.json({ planId: data.planId || 'essencial' })
+  return NextResponse.json({
+    success: true,
+    tenantId: planCtx.tenantId,
+    planId: planCtx.planId,
+    plan: {
+      id: planDetails.id,
+      name: planDetails.name,
+      monthlyPrice: planDetails.monthlyPrice,
+      feePercent: planDetails.feePercent,
+      features: planCtx.features,
+      badge: planDetails.badge,
+    },
+  })
 }

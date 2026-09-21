@@ -13,6 +13,8 @@ import {
   Pencil,
   Trash2,
   Plus,
+  CheckCircle,
+  BarChart3,
 } from 'lucide-react'
 
 interface Event {
@@ -208,6 +210,22 @@ export default function EventosPage() {
                     >
                       <Users className="w-3.5 h-3.5" />
                       Inscritos
+                    </button>
+                    <button
+                      onClick={() => router.push(`/eventos/${event.id}/checkin`)}
+                      className="inline-flex items-center gap-1.5 text-sm font-medium border border-emerald-200 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 px-3 py-1.5 rounded-lg transition-colors"
+                      title="Portaria e Leitura de QR Code"
+                    >
+                      <CheckCircle className="w-3.5 h-3.5" />
+                      Check-in
+                    </button>
+                    <button
+                      onClick={() => router.push(`/eventos/${event.id}/relatorios`)}
+                      className="inline-flex items-center gap-1.5 text-sm font-medium border border-indigo-200 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 px-3 py-1.5 rounded-lg transition-colors"
+                      title="Relatórios Analíticos Avançados"
+                    >
+                      <BarChart3 className="w-3.5 h-3.5" />
+                      Relatórios
                     </button>
                     {isPublished && (
                       <Link

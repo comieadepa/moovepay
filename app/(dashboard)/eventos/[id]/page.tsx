@@ -20,7 +20,7 @@ import {
   FormMessage,
 } from '@/components/ui/form'
 import { compressAndUploadImage } from '@/lib/media-client'
-import { Upload, Users } from 'lucide-react'
+import { Upload, Users, CheckCircle, BarChart3 } from 'lucide-react'
 import { canvasToFile, drawImageToCanvas, loadImageFromFile } from '@/lib/image-editor-client'
 
 type EventResponse = {
@@ -367,6 +367,22 @@ export default function EventDetailPage({ params }: { params: { id: string } }) 
             >
               <Users className="h-4 w-4 mr-1" />
               Inscritos
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => router.push(`/eventos/${params.id}/checkin`)}
+              className="border-emerald-200 bg-emerald-50 hover:bg-emerald-100 text-emerald-700"
+            >
+              <CheckCircle className="h-4 w-4 mr-1" />
+              Check-in
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => router.push(`/eventos/${params.id}/relatorios`)}
+              className="border-indigo-200 bg-indigo-50 hover:bg-indigo-100 text-indigo-700"
+            >
+              <BarChart3 className="h-4 w-4 mr-1" />
+              Relatórios
             </Button>
             <Button variant="outline" onClick={() => router.push('/eventos')}>
               Voltar

@@ -3,6 +3,7 @@ import { registrationSchema } from '@/lib/validations'
 import { supabase, createRegistration } from '@/lib/supabase-server'
 import { sendEmail, emailTemplates } from '@/lib/email'
 import { verifyToken } from '@/lib/auth'
+import { isTenantMember } from '@/lib/rbac'
 
 export async function POST(request: NextRequest) {
   try {
@@ -177,12 +178,18 @@ export async function GET(request: NextRequest) {
         return NextResponse.json({ error: 'Evento não encontrado' }, { status: 404 })
       }
 
-      const tenantId = verified.tenantId || verified.userId
-      const ownsEvent =
-        event.tenantId === tenantId ||
-        event.creatorId === verified.userId
+      const isAdmin = verified.role === 'admin'
+      const isCreator = event.creatorId === verified.userId
+      const eventTenantId = event.tenantId
 
-      if (!ownsEvent) {
+      let isMember = false
+      if (eventTenantId) {
+        // Verifica se o usuário autenticado é membro ativo do tenant dono do evento
+        isMember = !!(await isTenantMember(eventTenantId, verified.userId))
+      }
+
+      // Se não for admin, criador direto ou membro do tenant dono do evento, nega acesso
+      if (!isAdmin && !isCreator && !isMember) {
         return NextResponse.json({ error: 'Não autorizado' }, { status: 403 })
       }
     }
@@ -192,7 +199,8 @@ export async function GET(request: NextRequest) {
       .select(`
         *,
         event:Event(*),
-        inscriptionType:InscriptionType(*)
+        inscriptionType:InscriptionType(*),
+        voucher:Voucher(id, used, usedAt)
       `)
       .order('createdAt', { ascending: false })
 

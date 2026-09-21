@@ -51,8 +51,8 @@ export async function POST(
     return NextResponse.json({ error: 'Evento encerrado — link expirado' }, { status: 403 })
   }
 
-  // Extrai registrationId do payload "congregapay:voucher:<id>"
-  const match = qrPayload.match(/^congregapay:voucher:(.+)$/)
+  // Extrai registrationId do payload "congregapay:voucher:<id>" OU "congregapay:reg:<id>"
+  const match = qrPayload.match(/^congregapay:(?:voucher|reg):(.+)$/)
   if (!match) {
     return NextResponse.json(
       { result: 'not_found', message: 'QR Code inválido para esta plataforma' },
@@ -91,8 +91,8 @@ export async function POST(
     voucherId: voucher?.id ?? null,
   }
 
-  // Apenas inscrições pagas são aceitas neste fluxo (eventos pagos)
-  if (reg.status !== 'paid') {
+  // Pagamento não confirmado ('paid' = pago | 'confirmed' = gratuito confirmado)
+  if (reg.status !== 'paid' && reg.status !== 'confirmed') {
     await supabase.from('CheckinLog').insert({ ...logBase, voucherId: voucher?.id ?? 'unknown', result: 'not_paid' })
     return NextResponse.json(
       { result: 'not_paid', message: 'Pagamento não confirmado', participant: reg.fullName },
@@ -109,27 +109,41 @@ export async function POST(
     )
   }
 
-  // Sem voucher
-  if (!voucher) {
-    return NextResponse.json(
-      { result: 'not_found', message: 'Voucher não gerado para esta inscrição' },
-      { status: 404 }
-    )
-  }
-
-  // Marca como usado
   const now = new Date().toISOString()
-  const { error: updateErr } = await supabase
-    .from('Voucher')
-    .update({ used: true, usedAt: now })
-    .eq('id', voucher.id)
-    .eq('used', false)
+  let voucherId = voucher?.id
 
-  if (updateErr) {
-    return NextResponse.json({ error: 'Erro ao confirmar check-in' }, { status: 500 })
+  // Sem voucher gerado ainda: gera e marca como usado atomicamente
+  if (!voucher) {
+    const { data: newVoucher, error: createVoucherErr } = await supabase
+      .from('Voucher')
+      .insert({
+        registrationId: reg.id,
+        qrCode: `congregapay:voucher:${reg.id}`,
+        used: true,
+        usedAt: now,
+      })
+      .select('id')
+      .single()
+
+    if (createVoucherErr || !newVoucher) {
+      return NextResponse.json({ error: 'Erro ao gerar voucher para check-in' }, { status: 500 })
+    }
+    voucherId = newVoucher.id
+  } else {
+    // Marca como usado
+    const { error: updateErr } = await supabase
+      .from('Voucher')
+      .update({ used: true, usedAt: now })
+      .eq('id', voucher.id)
+      .eq('used', false)
+
+    if (updateErr) {
+      return NextResponse.json({ error: 'Erro ao confirmar check-in' }, { status: 500 })
+    }
+    voucherId = voucher.id
   }
 
-  await supabase.from('CheckinLog').insert({ ...logBase, result: 'ok' })
+  await supabase.from('CheckinLog').insert({ ...logBase, voucherId, result: 'ok' })
 
   return NextResponse.json({
     result: 'ok',
