@@ -1,11 +1,20 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { QRCodeSVG } from 'qrcode.react'
-import { CheckCircle2, Clock, FileText } from 'lucide-react'
+import { CheckCircle2, Clock, FileText, QrCode, RefreshCw, AlertCircle } from 'lucide-react'
+
+interface VoucherItem {
+  registrationId: string
+  fullName: string
+  inscriptionTypeName: string
+  voucherUrl: string
+  isUsed: boolean
+}
 
 function ConfirmacaoPageContent() {
   const router = useRouter()
@@ -13,26 +22,126 @@ function ConfirmacaoPageContent() {
   const [total, setTotal] = useState<string | null>(null)
   const [method, setMethod] = useState<string | null>(null)
   const [status, setStatus] = useState<string | null>(null)
+  const [paymentId, setPaymentId] = useState<string | null>(null)
   const [pixCopyPaste, setPixCopyPaste] = useState<string | null>(null)
   const [pixQrCodeBase64, setPixQrCodeBase64] = useState<string | null>(null)
   const [boletoUrl, setBoletoUrl] = useState<string | null>(null)
   const [copied, setCopied] = useState(false)
   const [code, setCode] = useState<string | null>(null)
 
+  // Polling states
+  const [isPolling, setIsPolling] = useState(false)
+  const [isCheckingManual, setIsCheckingManual] = useState(false)
+  const [pollingTimeoutReached, setPollingTimeoutReached] = useState(false)
+  const [vouchers, setVouchers] = useState<VoucherItem[]>([])
+
+  const pollingAttemptsRef = useRef(0)
+  const isPollingRef = useRef(false)
+
   useEffect(() => {
     const params = new URLSearchParams(window.location.search)
     setRegistrations(params.get('registrations') || '0')
     setTotal(params.get('total'))
     setMethod(params.get('method'))
-    setStatus(params.get('status'))
+    const initialStatus = params.get('status') || 'pending'
+    setStatus(initialStatus)
+    const pId = params.get('paymentId')
+    setPaymentId(pId)
     setPixCopyPaste(params.get('pixCopyPaste'))
     setPixQrCodeBase64(params.get('pixQrCodeBase64'))
     setBoletoUrl(params.get('boletoUrl'))
     const rawCode = params.get('code')
-    setCode(rawCode ? `#${rawCode}` : `#${Math.random().toString(36).substring(2, 10).toUpperCase()}`)
+    setCode(rawCode ? `#${rawCode}` : (pId ? `#${pId.slice(0, 8).toUpperCase()}` : `#${Math.random().toString(36).substring(2, 10).toUpperCase()}`))
   }, [])
 
-  const isPending = method === 'pix' || method === 'boleto' || (status === 'pending' && method !== 'free')
+  // Função para checar status no backend
+  const checkPaymentStatus = useCallback(async (isManual = false) => {
+    if (!paymentId && !code) return
+
+    if (isManual) setIsCheckingManual(true)
+
+    try {
+      const qs = new URLSearchParams()
+      if (paymentId) qs.set('paymentId', paymentId)
+
+      const res = await fetch(`/api/checkout/status?${qs.toString()}`, {
+        cache: 'no-store',
+      })
+
+      if (res.ok) {
+        const data = await res.json()
+        if (data.success && data.payment) {
+          const currentStatus = data.payment.status
+          if (currentStatus === 'paid') {
+            setStatus('paid')
+            if (Array.isArray(data.payment.vouchers) && data.payment.vouchers.length > 0) {
+              setVouchers(data.payment.vouchers)
+            }
+            setIsPolling(false)
+            isPollingRef.current = false
+            return true
+          }
+        }
+      }
+    } catch (err) {
+      console.warn('[confirmacao] Erro temporário ao consultar status do pagamento:', err)
+    } finally {
+      if (isManual) setIsCheckingManual(false)
+    }
+    return false
+  }, [paymentId, code])
+
+  // Efeito de Polling inteligente
+  useEffect(() => {
+    const shouldPoll =
+      (method === 'pix' || method === 'boleto' || status === 'pending') &&
+      status !== 'paid' &&
+      paymentId
+
+    if (!shouldPoll) {
+      setIsPolling(false)
+      isPollingRef.current = false
+      return
+    }
+
+    setIsPolling(true)
+    isPollingRef.current = true
+    setPollingTimeoutReached(false)
+    pollingAttemptsRef.current = 0
+
+    // Intervalo de 3 segundos com máximo de 100 tentativas (~5 minutos)
+    const MAX_ATTEMPTS = 100
+    const INTERVAL_MS = 3000
+
+    const interval = setInterval(async () => {
+      if (!isPollingRef.current) {
+        clearInterval(interval)
+        return
+      }
+
+      pollingAttemptsRef.current += 1
+
+      if (pollingAttemptsRef.current > MAX_ATTEMPTS) {
+        clearInterval(interval)
+        setIsPolling(false)
+        isPollingRef.current = false
+        setPollingTimeoutReached(true)
+        return
+      }
+
+      const isConfirmed = await checkPaymentStatus()
+      if (isConfirmed) {
+        clearInterval(interval)
+      }
+    }, INTERVAL_MS)
+
+    return () => {
+      clearInterval(interval)
+      isPollingRef.current = false
+    }
+  }, [method, status, paymentId, checkPaymentStatus])
+
+  const isPending = status !== 'paid' && (method === 'pix' || method === 'boleto' || (status === 'pending' && method !== 'free'))
   const count = parseInt(registrations) || 1
 
   const money = (value: number) => {
@@ -56,6 +165,20 @@ function ConfirmacaoPageContent() {
   }
 
   const getHeaderInfo = () => {
+    if (status === 'paid') {
+      return {
+        title: 'Pagamento confirmado!',
+        subtitle: count === 1
+          ? 'Sua inscrição foi confirmada com sucesso. Seu voucher já está liberado abaixo.'
+          : `${count} inscrições foram confirmadas com sucesso. Os vouchers já estão liberados abaixo.`,
+        badgeColor: 'bg-emerald-100 text-emerald-800 border-emerald-300',
+        badgeText: 'Confirmado',
+        cardBg: 'border-emerald-200 bg-emerald-50/60',
+        iconBg: 'bg-emerald-600',
+        icon: <CheckCircle2 className="w-8 h-8 text-white" />,
+      }
+    }
+
     if (method === 'pix') {
       return {
         title: 'Aguardando pagamento via PIX',
@@ -114,7 +237,7 @@ function ConfirmacaoPageContent() {
           <CardContent className="pt-12 text-center pb-12">
             {/* Status Icon */}
             <div className="mb-4 flex justify-center">
-              <div className={`w-16 h-16 ${headerInfo.iconBg} rounded-full flex items-center justify-center shadow-sm`}>
+              <div className={`w-16 h-16 ${headerInfo.iconBg} rounded-full flex items-center justify-center shadow-sm transition-all duration-300`}>
                 {headerInfo.icon}
               </div>
             </div>
@@ -130,6 +253,35 @@ function ConfirmacaoPageContent() {
             <p className="text-slate-700 text-base sm:text-lg mb-4 max-w-lg mx-auto">
               {headerInfo.subtitle}
             </p>
+
+            {/* Aviso de Polling / Sincronização em tempo real */}
+            {isPending && isPolling && (
+              <div className="mb-6 inline-flex items-center gap-2 px-3 py-1.5 bg-blue-50 border border-blue-200 rounded-full text-xs text-blue-700 animate-pulse">
+                <span className="w-2 h-2 rounded-full bg-blue-500 animate-ping" />
+                <span>Sincronizando com o banco... A página atualizará assim que o PIX for detectado.</span>
+              </div>
+            )}
+
+            {/* Timeout de Polling com botão de re-checagem manual */}
+            {isPending && pollingTimeoutReached && (
+              <div className="mb-6 p-4 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-800 text-left flex items-start gap-3">
+                <AlertCircle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+                <div className="flex-1 space-y-2">
+                  <p className="font-semibold">O pagamento ainda está sendo processado pelo banco.</p>
+                  <p>Se você já realizou a transferência, clique no botão abaixo para verificar novamente agora.</p>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => checkPaymentStatus(true)}
+                    disabled={isCheckingManual}
+                    className="bg-white border-amber-300 text-amber-900 hover:bg-amber-100/50"
+                  >
+                    <RefreshCw className={`w-3.5 h-3.5 mr-1.5 ${isCheckingManual ? 'animate-spin' : ''}`} />
+                    {isCheckingManual ? 'Consultando...' : 'Verificar status do pagamento'}
+                  </Button>
+                </div>
+              </div>
+            )}
 
             {code && (
               <p className="text-sm font-mono text-slate-800 bg-white/80 border border-slate-300 rounded-md px-4 py-2 inline-block mb-6 shadow-sm">
@@ -160,8 +312,44 @@ function ConfirmacaoPageContent() {
               </Card>
             )}
 
-            {/* PIX */}
-            {method === 'pix' && pixCopyPaste && (
+            {/* SE CONFIRMADO / PAGO: Exibir lista de Vouchers disponíveis */}
+            {status === 'paid' && vouchers.length > 0 && (
+              <Card className="mb-6 bg-white border-emerald-300 shadow-sm text-left">
+                <CardContent className="pt-6">
+                  <div className="flex items-center gap-2 mb-3">
+                    <QrCode className="w-5 h-5 text-emerald-600" />
+                    <h3 className="font-bold text-slate-900 text-base">Seus Vouchers de Entrada</h3>
+                  </div>
+                  <p className="text-xs text-slate-600 mb-4">
+                    Apresente os QR Codes abaixo na entrada do evento para realizar o check-in.
+                  </p>
+                  <div className="space-y-2.5">
+                    {vouchers.map((v, idx) => (
+                      <div
+                        key={v.registrationId || idx}
+                        className="p-3.5 border border-slate-200 rounded-xl bg-slate-50 flex items-center justify-between gap-3 hover:border-emerald-300 transition-colors"
+                      >
+                        <div className="min-w-0">
+                          <p className="font-semibold text-sm text-slate-900 truncate">{v.fullName}</p>
+                          <p className="text-xs text-slate-500">{v.inscriptionTypeName}</p>
+                        </div>
+                        <Link
+                          href={v.voucherUrl}
+                          target="_blank"
+                          className="shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-semibold shadow-sm transition-all"
+                        >
+                          <QrCode className="w-3.5 h-3.5" />
+                          <span>Abrir Voucher</span>
+                        </Link>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* PIX: Só exibe se ainda estiver pendente */}
+            {isPending && method === 'pix' && pixCopyPaste && (
               <Card className="mb-6 bg-white border-blue-200">
                 <CardContent className="pt-6">
                   <h3 className="font-semibold text-slate-900 mb-4 text-left">Pague via PIX</h3>
@@ -198,7 +386,7 @@ function ConfirmacaoPageContent() {
                       </div>
                     </div>
                     <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded px-3 py-2 text-center w-full">
-                      Após o pagamento, seu voucher será enviado por e-mail automaticamente.
+                      Após o pagamento, esta tela atualizará automaticamente e seu voucher será liberado.
                     </p>
                   </div>
                 </CardContent>
@@ -206,7 +394,7 @@ function ConfirmacaoPageContent() {
             )}
 
             {/* Boleto */}
-            {method === 'boleto' && boletoUrl && (
+            {isPending && method === 'boleto' && boletoUrl && (
               <Card className="mb-6 bg-white border-amber-200">
                 <CardContent className="pt-6">
                   <h3 className="font-semibold text-slate-900 mb-3 text-left">Pague via Boleto</h3>
@@ -259,12 +447,12 @@ function ConfirmacaoPageContent() {
                           {method !== 'free' && (
                             <li className="flex gap-3">
                               <span className="font-bold text-emerald-700">2.</span>
-                              <span>Seu comprovante de pagamento será enviado por email</span>
+                              <span>Seu comprovante de pagamento foi enviado por email</span>
                             </li>
                           )}
                           <li className="flex gap-3">
                             <span className="font-bold text-emerald-700">{method !== 'free' ? '3' : '2'}.</span>
-                            <span>Você receberá um voucher/QR code para check-in no evento</span>
+                            <span>Apresente o voucher gerado para check-in no evento</span>
                           </li>
                           <li className="flex gap-3">
                             <span className="font-bold text-emerald-700">{method !== 'free' ? '4' : '3'}.</span>
@@ -318,3 +506,4 @@ function ConfirmacaoPageContent() {
 export default function ConfirmacaoPage() {
   return <ConfirmacaoPageContent />
 }
+
