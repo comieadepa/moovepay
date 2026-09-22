@@ -189,12 +189,15 @@ export async function POST(request: NextRequest) {
         .upsert({ registrationId: reg.id, qrCode, used: false }, { onConflict: 'registrationId' })
 
       // Enviar e-mail com voucher
-      const eventName = (reg as any).event?.name || 'Evento'
-      const voucherUrl = `${process.env.NEXT_PUBLIC_APP_URL}/voucher/${reg.id}`
+      const eventObj = Array.isArray((reg as any).event) ? (reg as any).event[0] : (reg as any).event
+      const eventName = eventObj?.name || 'Evento'
+      const appBaseUrl = (process.env.NEXT_PUBLIC_APP_URL || process.env.APP_ORIGIN || 'https://congregapay.com.br').replace(/\/$/, '')
+      const voucherUrl = `${appBaseUrl}/voucher/${reg.id}`
 
       try {
         const template = emailTemplates.voucherEmail(reg.fullName, eventName, voucherUrl)
         await sendEmail({ to: reg.email, subject: template.subject, html: template.html })
+        console.log(`[webhook/asaas] E-mail de voucher enviado com sucesso para ${reg.email} (inscrição ${reg.id})`)
       } catch (emailErr) {
         console.error('[webhook/asaas] Erro ao enviar voucher por e-mail:', emailErr)
         // best-effort: não falha o webhook por causa do e-mail

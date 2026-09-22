@@ -32,8 +32,8 @@ export async function POST(
   }
 
   // Só envia voucher se a inscrição estiver paga; caso contrário envia confirmação pendente
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL || ''
-  const voucherUrl = `${appUrl}/voucher/${reg.id}`
+  const appBaseUrl = (process.env.NEXT_PUBLIC_APP_URL || process.env.APP_ORIGIN || 'https://congregapay.com.br').replace(/\/$/, '')
+  const voucherUrl = `${appBaseUrl}/voucher/${reg.id}`
 
   const template = reg.status === 'paid'
     ? emailTemplates.voucherEmail(reg.fullName, event?.name || 'Evento', voucherUrl)
@@ -45,9 +45,9 @@ export async function POST(
       subject: template.subject,
       html: template.html,
     })
-  } catch (e) {
+  } catch (e: any) {
     console.error('Erro ao reenviar email:', e)
-    return NextResponse.json({ error: 'Erro ao enviar email' }, { status: 500 })
+    return NextResponse.json({ error: e?.message || 'Erro ao enviar email' }, { status: 500 })
   }
 
   return NextResponse.json({ success: true, sentTo: reg.email })

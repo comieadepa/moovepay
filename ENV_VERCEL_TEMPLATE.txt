@@ -25,8 +25,10 @@ GOOGLE_CLIENT_ID=XXXXX_DO_GOOGLE_CLOUD_CONSOLE.apps.googleusercontent.com
 GOOGLE_CLIENT_SECRET=XXXXX_SECRET_DO_GOOGLE_XXXXX
 
 # ==================== RESEND (E-MAILS) ====================
-
+# Obtenha sua API Key em resend.com/api-keys
 RESEND_API_KEY=re_XXXXX_CHAVE_RESEND_XXXXX
+# Remetente (o domínio precisa estar verificado no painel da Resend em resend.com/domains)
+EMAIL_FROM=noreply@congregapay.com.br
 NEXT_PUBLIC_EMAIL_FROM=noreply@congregapay.com.br
 
 # ==================== ASAAS (PAGAMENTOS) ====================

@@ -1,6 +1,18 @@
 import { Resend } from 'resend'
 
-const resend = new Resend(process.env.RESEND_API_KEY)
+let resendClient: Resend | null = null
+
+function getResendClient(): Resend | null {
+  const apiKey = process.env.RESEND_API_KEY
+  if (!apiKey) {
+    console.warn('[lib/email] AVISO: RESEND_API_KEY não está configurada no ambiente.')
+    return null
+  }
+  if (!resendClient) {
+    resendClient = new Resend(apiKey)
+  }
+  return resendClient
+}
 
 export interface EmailPayload {
   to: string
@@ -13,18 +25,36 @@ export async function sendEmail({
   to,
   subject,
   html,
-  from = process.env.EMAIL_FROM || 'noreply@congregapay.com.br',
+  from,
 }: EmailPayload) {
+  const client = getResendClient()
+  if (!client) {
+    const errorMsg = 'RESEND_API_KEY não está definida nas variáveis de ambiente'
+    console.error(`[lib/email] Falha ao enviar para ${to}: ${errorMsg}`)
+    throw new Error(errorMsg)
+  }
+
+  // Remetente padrão com suporte a múltiplas convenções de variável de ambiente
+  const rawSender = from || process.env.EMAIL_FROM || process.env.NEXT_PUBLIC_EMAIL_FROM || 'noreply@congregapay.com.br'
+  const sender = rawSender.includes('<') ? rawSender : `CongregaPay <${rawSender}>`
+
   try {
-    const data = await resend.emails.send({
-      from,
+    const response = await client.emails.send({
+      from: sender,
       to,
       subject,
       html,
     })
-    return data
-  } catch (error) {
-    console.error('Erro ao enviar email:', error)
+
+    if (response.error) {
+      const errorDetail = `[Resend Error ${response.error.statusCode || 'Unknown'}] ${response.error.name}: ${response.error.message}`
+      console.error(`[lib/email] Erro retornado pela API Resend para ${to}:`, errorDetail)
+      throw new Error(errorDetail)
+    }
+
+    return response.data
+  } catch (error: any) {
+    console.error(`[lib/email] Exceção ao enviar email para ${to}:`, error?.message || error)
     throw error
   }
 }
