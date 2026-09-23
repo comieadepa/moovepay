@@ -355,7 +355,7 @@ export default async function VoucherPage({ params }: Props) {
               <div className="flex items-start gap-2">
                 <MapPin className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
                 <div>
-                  <p className="font-bold text-slate-900">{tenantName}</p>
+                  <p className="font-bold text-slate-900">Local do Evento</p>
                   <p className="text-slate-600">{event?.location || 'Local a definir / Divulgado pela organização'}</p>
                 </div>
               </div>

@@ -29,6 +29,7 @@ type EventResponse = {
     id: string
     name: string
     description: string | null
+    location?: string | null
     banner: string | null
     startDate: string
     endDate: string | null
@@ -78,6 +79,7 @@ export default function EventDetailPage({ params }: { params: { id: string } }) 
     defaultValues: {
       name: '',
       description: '',
+      location: '',
       banner: '',
       startDate: new Date(),
       endDate: undefined,
@@ -261,6 +263,7 @@ export default function EventDetailPage({ params }: { params: { id: string } }) 
         form.reset({
           name: data.event.name,
           description: data.event.description ?? '',
+          location: data.event.location ?? '',
           banner: data.event.banner ?? '',
           startDate: new Date(data.event.startDate),
           endDate: data.event.endDate ? new Date(data.event.endDate) : undefined,
@@ -482,6 +485,24 @@ export default function EventDetailPage({ params }: { params: { id: string } }) 
                           placeholder="Descreva seu evento..."
                           className="w-full h-24 px-3 py-2 border border-input rounded-md"
                           {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="location"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Local do Evento</FormLabel>
+                      <FormControl>
+                        <Input
+                          placeholder="Ex: Av. Paulista, 1000 - Bela Vista, São Paulo - SP ou Auditório Principal"
+                          {...field}
+                          value={field.value || ''}
                         />
                       </FormControl>
                       <FormMessage />

@@ -49,6 +49,7 @@ export default function CreateEventPage() {
     defaultValues: {
       name: '',
       description: '',
+      location: '',
       banner: '',
       startDate: new Date(),
       endDate: undefined,
@@ -295,6 +296,24 @@ export default function CreateEventPage() {
                         placeholder="Descreva seu evento..."
                         className="w-full h-24 px-3 py-2 border border-input rounded-md"
                         {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="location"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Local do Evento</FormLabel>
+                    <FormControl>
+                      <Input
+                        placeholder="Ex: Av. Paulista, 1000 - Bela Vista, São Paulo - SP ou Auditório Principal"
+                        {...field}
+                        value={field.value || ''}
                       />
                     </FormControl>
                     <FormMessage />
