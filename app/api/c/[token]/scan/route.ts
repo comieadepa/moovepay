@@ -1,42 +1,74 @@
 import { NextRequest, NextResponse } from 'next/server'
 import bcrypt from 'bcryptjs'
 import { supabase } from '@/lib/supabase-server'
+import { hashCheckInToken, calculateEventExpiration } from '@/lib/checkin-token'
 
 // POST /api/c/[token]/scan
-// Body: { password: string, qrPayload: string }
-// Valida a senha do link e executa o check-in — sem necessidade de conta
+// Body: { password?: string, qrPayload: string }
+// Valida o token do link, elegibilidade da inscrição e executa o check-in atômico
 export async function POST(
   request: NextRequest,
   { params }: { params: { token: string } }
 ) {
-  let body: { password?: string; qrPayload?: string }
-  try { body = await request.json() } catch { return NextResponse.json({ error: 'Body inválido' }, { status: 400 }) }
-
-  const { password, qrPayload } = body
-
-  if (!password || !qrPayload) {
-    return NextResponse.json({ error: 'Campos obrigatórios: password, qrPayload' }, { status: 400 })
+  const token = params.token?.trim()
+  if (!token) {
+    return NextResponse.json({ error: 'Token obrigatório' }, { status: 400 })
   }
 
-  // Carrega o link com dados do evento
-  const { data: link } = await supabase
+  let body: { password?: string; qrPayload?: string; registrationId?: string }
+  try {
+    body = await request.json()
+  } catch {
+    return NextResponse.json({ error: 'Body inválido' }, { status: 400 })
+  }
+
+  const { password, qrPayload, registrationId: directRegId } = body
+  const payloadToProcess = (qrPayload || directRegId || '').trim()
+
+  if (!payloadToProcess) {
+    return NextResponse.json({ error: 'Payload de QR Code ou ID de inscrição obrigatório' }, { status: 400 })
+  }
+
+  const tokenHash = hashCheckInToken(token)
+
+  // 1. Carrega o link com dados do evento por tokenHash (ou fallback por id legado)
+  let { data: link } = await supabase
     .from('EventCheckInLink')
     .select('id, label, passwordHash, revokedAt, event:Event(id, name, startDate, endDate, tenantId, creatorId)')
-    .eq('id', params.token)
+    .eq('tokenHash', tokenHash)
     .maybeSingle()
 
   if (!link) {
-    return NextResponse.json({ error: 'Link inválido' }, { status: 404 })
+    const { data: legacyLink } = await supabase
+      .from('EventCheckInLink')
+      .select('id, label, passwordHash, revokedAt, event:Event(id, name, startDate, endDate, tenantId, creatorId)')
+      .eq('id', token)
+      .maybeSingle()
+    link = legacyLink
+  }
+
+  if (!link) {
+    return NextResponse.json({ error: 'Link de check-in inválido' }, { status: 404 })
   }
 
   if (link.revokedAt) {
-    return NextResponse.json({ error: 'Link revogado' }, { status: 403 })
+    return NextResponse.json({ error: 'Este link foi revogado pelo organizador' }, { status: 403 })
   }
 
-  // Valida senha
-  const valid = await bcrypt.compare(password, link.passwordHash)
-  if (!valid) {
-    return NextResponse.json({ error: 'Senha incorreta' }, { status: 401 })
+  // 2. Valida senha se o link tiver passwordHash configurado
+  if (link.passwordHash) {
+    if (!password) {
+      return NextResponse.json({ error: 'Senha de acesso obrigatória' }, { status: 401 })
+    }
+    const validPassword = await bcrypt.compare(password, link.passwordHash)
+    if (!validPassword) {
+      return NextResponse.json({ error: 'Senha incorreta' }, { status: 401 })
+    }
+  }
+
+  // Ping de teste de senha
+  if (payloadToProcess === '__ping__') {
+    return NextResponse.json({ success: true, message: 'Autenticado' })
   }
 
   const event = Array.isArray(link.event) ? link.event[0] : (link.event as any)
@@ -44,67 +76,85 @@ export async function POST(
     return NextResponse.json({ error: 'Evento não encontrado' }, { status: 404 })
   }
 
-  // Verifica expiração (endDate + 24h de tolerância)
-  const referenceDate = event.endDate ?? event.startDate
-  const expiresAt = new Date(referenceDate).getTime() + 24 * 60 * 60 * 1000
-  if (Date.now() > expiresAt) {
+  // 3. Verifica expiração no fuso America/Sao_Paulo
+  const { expired } = calculateEventExpiration(event.startDate, event.endDate)
+  if (expired) {
     return NextResponse.json({ error: 'Evento encerrado — link expirado' }, { status: 403 })
   }
 
-  // Extrai registrationId do payload "congregapay:voucher:<id>" OU "congregapay:reg:<id>"
-  const match = qrPayload.match(/^congregapay:(?:voucher|reg):(.+)$/)
-  if (!match) {
+  // 4. Extrai registrationId do payload ("congregapay:voucher:<id>", "congregapay:reg:<id>" ou id direto)
+  let registrationId = payloadToProcess
+  const match = payloadToProcess.match(/^congregapay:(?:voucher|reg):(.+)$/)
+  if (match) {
+    registrationId = match[1]
+  } else if (!/^[a-zA-Z0-9_-]{10,64}$/.test(payloadToProcess)) {
     return NextResponse.json(
       { result: 'not_found', message: 'QR Code inválido para esta plataforma' },
       { status: 422 }
     )
   }
-  const registrationId = match[1]
 
-  // Busca inscrição + voucher
-  const { data: reg } = await supabase
+  // 5. Busca inscrição + voucher + tipo de ingresso (garantindo estritamente eventId correspondente)
+  const { data: reg, error: regError } = await supabase
     .from('Registration')
     .select(`
       id, fullName, email, status,
       event:Event ( id, name ),
+      inscriptionType:InscriptionType ( id, name ),
       voucher:Voucher ( id, used, usedAt )
     `)
     .eq('id', registrationId)
     .eq('eventId', event.id)
     .maybeSingle()
 
-  if (!reg) {
+  if (regError || !reg) {
     return NextResponse.json(
-      { result: 'not_found', message: 'Inscrição não encontrada neste evento' },
+      { result: 'not_found', message: 'Inscrição não localizada neste evento' },
       { status: 404 }
     )
   }
 
   const regEvent = Array.isArray(reg.event) ? reg.event[0] : (reg.event as any)
+  const inscriptionType = Array.isArray(reg.inscriptionType) ? reg.inscriptionType[0] : (reg.inscriptionType as any)
   const voucher = Array.isArray(reg.voucher) ? reg.voucher[0] : (reg.voucher as any)
 
   const logBase = {
     registrationId: reg.id,
     eventId: event.id,
-    scannedBy: null,
-    scannedByName: link.label,
+    scannedBy: `link:${link.id}`,
+    scannedByName: link.label || 'Portaria Móvel',
     voucherId: voucher?.id ?? null,
   }
 
-  // Pagamento não confirmado ('paid' = pago | 'confirmed' = gratuito confirmado)
+  // 6. Validar status do pagamento ('paid' = pago | 'confirmed' = gratuito confirmado)
   if (reg.status !== 'paid' && reg.status !== 'confirmed') {
-    await supabase.from('CheckinLog').insert({ ...logBase, voucherId: voucher?.id ?? 'unknown', result: 'not_paid' })
+    await supabase.from('CheckinLog').insert({
+      ...logBase,
+      voucherId: voucher?.id ?? 'unknown',
+      result: 'not_paid',
+    })
     return NextResponse.json(
-      { result: 'not_paid', message: 'Pagamento não confirmado', participant: reg.fullName },
+      {
+        result: 'not_paid',
+        message: 'Pagamento não confirmado para esta inscrição',
+        participant: reg.fullName,
+        inscriptionType: inscriptionType?.name || 'Inscrição',
+      },
       { status: 422 }
     )
   }
 
-  // Voucher já utilizado
+  // 7. Se voucher já constava como usado
   if (voucher?.used) {
     await supabase.from('CheckinLog').insert({ ...logBase, result: 'already_used' })
     return NextResponse.json(
-      { result: 'already_used', message: 'Voucher já utilizado', participant: reg.fullName, usedAt: voucher.usedAt },
+      {
+        result: 'already_used',
+        message: 'Voucher já utilizado anteriormente',
+        participant: reg.fullName,
+        inscriptionType: inscriptionType?.name || 'Inscrição',
+        usedAt: voucher.usedAt,
+      },
       { status: 409 }
     )
   }
@@ -112,8 +162,9 @@ export async function POST(
   const now = new Date().toISOString()
   let voucherId = voucher?.id
 
-  // Sem voucher gerado ainda: gera e marca como usado atomicamente
+  // 8. Operação Atômica de Check-in
   if (!voucher) {
+    // Inscrição válida sem voucher: cria e marca como usado atomicamente
     const { data: newVoucher, error: createVoucherErr } = await supabase
       .from('Voucher')
       .insert({
@@ -122,33 +173,61 @@ export async function POST(
         used: true,
         usedAt: now,
       })
-      .select('id')
+      .select('id, used, usedAt')
       .single()
 
     if (createVoucherErr || !newVoucher) {
-      return NextResponse.json({ error: 'Erro ao gerar voucher para check-in' }, { status: 500 })
+      // Se deu conflito de chave única, outro processo acabou de criar
+      return NextResponse.json(
+        {
+          result: 'already_used',
+          message: 'Voucher já utilizado',
+          participant: reg.fullName,
+          inscriptionType: inscriptionType?.name || 'Inscrição',
+          usedAt: now,
+        },
+        { status: 409 }
+      )
     }
     voucherId = newVoucher.id
   } else {
-    // Marca como usado
-    const { error: updateErr } = await supabase
+    // ATOMIC UPDATE: Só altera se used for estritamente false
+    const { data: updatedVoucher, error: updateErr } = await supabase
       .from('Voucher')
       .update({ used: true, usedAt: now })
       .eq('id', voucher.id)
       .eq('used', false)
+      .select('id, used, usedAt')
+      .maybeSingle()
 
-    if (updateErr) {
-      return NextResponse.json({ error: 'Erro ao confirmar check-in' }, { status: 500 })
+    if (updateErr || !updatedVoucher) {
+      // Condição de corrida evitada: outro operador validou no mesmo instante
+      await supabase.from('CheckinLog').insert({ ...logBase, result: 'already_used' })
+      return NextResponse.json(
+        {
+          result: 'already_used',
+          message: 'Voucher já utilizado',
+          participant: reg.fullName,
+          inscriptionType: inscriptionType?.name || 'Inscrição',
+          usedAt: voucher.usedAt || now,
+        },
+        { status: 409 }
+      )
     }
-    voucherId = voucher.id
+    voucherId = updatedVoucher.id
   }
 
-  await supabase.from('CheckinLog').insert({ ...logBase, voucherId, result: 'ok' })
+  // 9. Registra auditoria do check-in com sucesso e atualiza lastUsedAt no link
+  await Promise.all([
+    supabase.from('CheckinLog').insert({ ...logBase, voucherId, result: 'ok' }),
+    supabase.from('EventCheckInLink').update({ lastUsedAt: now }).eq('id', link.id),
+  ])
 
   return NextResponse.json({
     result: 'ok',
     message: 'Check-in realizado com sucesso!',
     participant: reg.fullName,
+    inscriptionType: inscriptionType?.name || 'Inscrição',
     event: regEvent?.name ?? event.name,
     checkedInAt: now,
   })

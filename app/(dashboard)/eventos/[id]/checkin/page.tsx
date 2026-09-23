@@ -17,6 +17,8 @@ import {
   Percent,
   ArrowLeft,
   ScanLine,
+  Smartphone,
+  ExternalLink,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -265,6 +267,15 @@ export default function CheckinPage() {
           <Button
             variant="outline"
             size="sm"
+            onClick={() => router.push(`/eventos/${eventId}/staff`)}
+            className="text-xs gap-1 text-emerald-700 border-emerald-200 bg-emerald-50/50 hover:bg-emerald-100/50"
+          >
+            <Smartphone className="w-3.5 h-3.5" />
+            Links de Portaria
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
             onClick={() => router.push(`/eventos/${eventId}/inscritos`)}
             className="text-xs gap-1"
           >
@@ -272,6 +283,24 @@ export default function CheckinPage() {
             Inscritos
           </Button>
         </div>
+      </div>
+
+      {/* ── Banner de Check-in Móvel ── */}
+      <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-3.5 flex items-center justify-between gap-3 text-xs">
+        <div className="flex items-center gap-2.5 text-emerald-900">
+          <Smartphone className="w-4 h-4 text-emerald-600 flex-shrink-0" />
+          <span>
+            <strong>Check-in no Celular:</strong> Gere links exclusivos para a equipe de portaria escanear ingressos diretamente no celular.
+          </span>
+        </div>
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={() => router.push(`/eventos/${eventId}/staff`)}
+          className="text-xs font-semibold gap-1 text-emerald-800 border-emerald-300 bg-white hover:bg-emerald-50 h-8 flex-shrink-0"
+        >
+          Gerar Links <ExternalLink className="w-3 h-3" />
+        </Button>
       </div>
 
       {/* ── Painel de Métricas de Presença ── */}
